@@ -261,9 +261,9 @@ def get_mse(pred, actual):
 
 # MF function
 class ExplicitMF:
-    def __init__(self, ratings, n_factors=40, learning='sgd', item_fact_reg=0.01, user_fact_reg=0.01,
-                 item_bias_reg=0.01, user_bias_reg=0.01, verbose=False):
-        """
+    def __init__(self, ratings, cnn, n_factors=40, learning='sgd', item_fact_reg=0.01, user_fact_reg=0.01,
+                  verbose=False):
+    """    
         Train a matrix factorization model to predict empty
         entries in a matrix. The terminology assumes a
         ratings matrix which is ~ user x item
@@ -294,31 +294,28 @@ class ExplicitMF:
 
         verbose : (bool)
             Whether or not to printout training progress
-        """
+    """    
 
-        self.ratings = ratings
-        self.n_users, self.n_items = ratings.shape
-        self.n_factors = n_factors
-        self.item_fact_reg = item_fact_reg
-        self.user_fact_reg = user_fact_reg
-        self.item_bias_reg = item_bias_reg
-        self.user_bias_reg = user_bias_reg
+        self.ratings = ratings # (ndarray)  user x item matrix with corresponding ratings
+        self.n_users, self.n_items = ratings.shape # Number of users and items
+        self.n_factors = n_factors # Number of latent factors to use in MF model
+        self.item_fact_reg = item_fact_reg # Regularization term for item latent factors
+        self.user_fact_reg = user_fact_reg # Regularization term for user latent factors
+        # self.item_bias_reg = item_bias_reg # Regularization term for item biases
+        # self.user_bias_reg = user_bias_reg # Regularization term for user biases
         self.learning = learning
         if self.learning == 'sgd':
             self.sample_row, self.sample_col = self.ratings.nonzero()
             self.n_samples = len(self.sample_row)
         self._v = verbose
-
+'''
     def als_step(self,
                  latent_vectors,
                  ratings,
                  fixed_vecs,
                  _lambda,
                  type='user'):
-        """
-        One of the two ALS steps. Solve for the latent vectors
-        specified by type.
-        """
+        # One of the two ALS steps. Solve for the latent vectors specified by type.
         if type == 'user':
             # Precompute
             YTY = fixed_vecs.T.dot(fixed_vecs)
@@ -336,17 +333,15 @@ class ExplicitMF:
                 latent_vectors[i, :] = solve((XTX + lambdaI),
                                              ratings[:, i].T.dot(fixed_vecs))
         return latent_vectors
-
+'''
     def train(self, n_iter = 10, learning_rate = 0.1):
         """ Train model for n_iter iterations from scratch."""
         # initialize latent vectors
-        self.user_vecs = np.random.normal(scale=1. / self.n_factors, \
-                                          size=(self.n_users, self.n_factors))
-        self.item_vecs = np.random.normal(scale=1. / self.n_factors,
-                                          size=(self.n_items, self.n_factors))
+        self.user_vecs = np.random.normal(scale=1. / self.n_factors, size=(self.n_users, self.n_factors))
+        self.item_vecs = np.random.normal(scale=1. / self.n_factors, size=(self.n_items, self.n_factors))
         # V*P*CNN(p)   CNN: 1*1000
         # eg: V^k*1 = V^k*m * P^m*1000 * (CNN^T)^1000*1
-        self.pic_latvecs = np.random.rand(self.n_factors, 1000)
+        self.pic_vecs = np.random.rand(self.n_factors, 1000)
 
         if self.learning == 'als':
             self.partial_train(n_iter)
@@ -398,10 +393,12 @@ class ExplicitMF:
             self.item_bias[i] += self.learning_rate * (e - self.item_bias_reg * self.item_bias[i])
 
             # Update P(latent matrix k*1000)
-            self.pic_bias[]
+            # self.pic_bias[] += self.learning_rate * ()
             # Update latent factors
             self.user_vecs[u, :] += self.learning_rate * (e * self.item_vecs[i, :] - self.user_fact_reg * self.user_vecs[u, :])
             self.item_vecs[i, :] += self.learning_rate * (e * self.user_vecs[u, :] - self.item_fact_reg * self.item_vecs[i, :])
+            # Update P
+            # self.pic_vecs[, :]
 
     def predict(self, u, i):
         """ Single user and item prediction."""
@@ -410,6 +407,7 @@ class ExplicitMF:
         elif self.learning == 'sgd':
             prediction = self.global_bias + self.user_bias[u] + self.item_bias[i]
             # 加上一个视觉特征
+            # self.item_vecs[i, :] = pic_latvecs[]
             prediction += self.user_vecs[u, :].dot(self.item_vecs[i, :].T)
             return prediction
 
@@ -581,11 +579,11 @@ if __name__ == "__main__":
     #         print str(movie_id), str(movie_jpg)
 
     # step4-------------PMF
-    MF_SGD = ExplicitMF(train_data_matrix, 40, learning = 'sgd', verbose = True)
+    # MF_SGD = ExplicitMF(train_data_matrix, 40, learning = 'sgd', verbose = True)
 
-    iter_array = [1, 2, 5, 10, 25, 50, 100]
+    # iter_array = [1, 2, 5, 10, 25, 50, 100]
 
-    MF_SGD.calculate_learning_curve(iter_array, test_data_matrix, learning_rate=0.01)
+    # MF_SGD.calculate_learning_curve(iter_array, test_data_matrix, learning_rate=0.01)
 
-    print(iter_array)
-    print(MF_SGD.test_mse)
+    # print(iter_array)
+    # print(MF_SGD.test_mse)
