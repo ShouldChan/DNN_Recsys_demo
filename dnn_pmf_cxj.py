@@ -10,9 +10,13 @@ import scipy.io as sio
 from scipy.misc import imread, imresize
 import numpy as np
 import time
+import math
 
 weight_file = './vgg16_weights.npz'
 
+# sigmoid
+def sigmoid(x):
+    return 1.0 / (1.0 + math.exp(-x))
 # vgg16 model
 class vgg16:
     def __init__(self, imgs, weights=None, sess=None):
@@ -298,6 +302,7 @@ class ExplicitMF:
     """    
 
         self.ratings = ratings # (ndarray)  user x item matrix with corresponding ratings
+        self.cnn = cnn
         self.n_users, self.n_items = ratings.shape # Number of users and items
         self.n_factors = n_factors # Number of latent factors to use in MF model
         self.item_fact_reg = item_fact_reg # Regularization term for item latent factors
@@ -355,6 +360,8 @@ class ExplicitMF:
         # eg: V^k*1 = V^k*m * P^m*1000 * (CNN^T)^1000*1
         self.pic_vecs = np.random.rand(self.n_factors, 1000)
         self.b_vecs = np.random.rand(self.n_factors, self.n_items)
+        # q: k*d the interaction matrix between visual contents and latent movie features
+        self.q_vecs = np.random.rand(self.n_factors, 1000)
 
 
         if self.learning == 'als':
@@ -415,8 +422,12 @@ class ExplicitMF:
             self.item_vecs[:, i] += self.learning_rate * (2 * self.user_vecs[:, u].dot(y_indicator * self.ratings).T) \
              - 2 * (self.user_vecs[:, u]).dot(y_indicator * (self.user_vecs[:, u].T * self.item_vecs[:, i])) \
              - 2 * self._lambda_1 * self.item_vecs[:, i] + self. alpha * b_vecs[:, i] 
-            # Update b_vecs 
+            # Update b_vecs: k*m 先使用随机初始化来测验 最后调成negative sampling 
             self.b_vecs = np.random.rand(self.n_factors, self.n_items)
+            # Update Q interaction matrix between V and CNN 没读到一个item（v）就更新
+            self.q_vecs += self.alpha * (1 - sigmoid(self.user_vecs[:, u].T * self.q_vecs * self.cnn.T) -  \
+                (1 - sigmoid(- self.user_vecs * self.q_vecs * self.cnn)))
+
             # self.pic_vecs[, :]
 
     def predict(self, u, i):
