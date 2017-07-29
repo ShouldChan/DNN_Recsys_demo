@@ -261,7 +261,8 @@ def get_mse(pred, actual):
 
 # MF function
 class ExplicitMF:
-    def __init__(self, ratings, cnn, n_factors=40, learning='sgd', item_fact_reg=0.01, user_fact_reg=0.01,
+    def __init__(self, ratings, cnn, n_factors=40, learning='sgd', _lambda_1=0.01, _lambda_2=0.01, \
+     alpha=0.01, item_fact_reg=0.01, user_fact_reg=0.01,
                   verbose=False):
     """    
         Train a matrix factorization model to predict empty
@@ -301,8 +302,16 @@ class ExplicitMF:
         self.n_factors = n_factors # Number of latent factors to use in MF model
         self.item_fact_reg = item_fact_reg # Regularization term for item latent factors
         self.user_fact_reg = user_fact_reg # Regularization term for user latent factors
-        # self.item_bias_reg = item_bias_reg # Regularization term for item biases
-        # self.user_bias_reg = user_bias_reg # Regularization term for user biases
+        # self.mean_avg = np.mean(ratings)
+        # define an indicator matrix Y, Y_ij = 1 if R_ij > 0 and 0 otherwise
+        # self.y_indicator = ratings
+        # self.y_indicator[y_indicator>0] = 1
+        self._lambda_1 = _lambda_1
+        self._lambda_2 = _lambda_2
+        self.alpha = alpha
+
+        self.item_bias_reg = item_bias_reg # Regularization term for item biases
+        self.user_bias_reg = user_bias_reg # Regularization term for user biases
         self.learning = learning
         if self.learning == 'sgd':
             self.sample_row, self.sample_col = self.ratings.nonzero()
@@ -337,11 +346,16 @@ class ExplicitMF:
     def train(self, n_iter = 10, learning_rate = 0.1):
         """ Train model for n_iter iterations from scratch."""
         # initialize latent vectors
-        self.user_vecs = np.random.normal(scale=1. / self.n_factors, size=(self.n_users, self.n_factors))
-        self.item_vecs = np.random.normal(scale=1. / self.n_factors, size=(self.n_items, self.n_factors))
+        # U: K*n  V: K*m
+        self.user_vecs = np.random.normal(scale=1. / self.n_factors,  \
+            size=(self.n_factors, self.n_users))
+        self.item_vecs = np.random.normal(scale=1. / self.n_factors,  \
+            size=(self.n_factors, self.n_items))
         # V*P*CNN(p)   CNN: 1*1000
         # eg: V^k*1 = V^k*m * P^m*1000 * (CNN^T)^1000*1
         self.pic_vecs = np.random.rand(self.n_factors, 1000)
+        self.b_vecs = np.random.rand(self.n_factors, self.n_items)
+
 
         if self.learning == 'als':
             self.partial_train(n_iter)
@@ -350,16 +364,13 @@ class ExplicitMF:
             self.user_bias = np.zeros(self.n_users)
             self.item_bias = np.zeros(self.n_items)
             # Update P k*1000  k = n_factors
-            self.pic_bias = np.zeros(self.n_factors)
+            # self.pic_bias = np.zeros(self.n_factors)
 
             self.global_bias = np.mean(self.ratings[np.where(self.ratings != 0)])
             self.partial_train(n_iter)
 
     def partial_train(self, n_iter):
-        """
-        Train model for n_iter iterations. Can be
-        called multiple times for further training.
-        """
+        # Train model for n_iter iterations. Can be called multiple times for further training.
         ctr = 1
         while ctr <= n_iter:
             if ctr % 10 == 0 and self._v:
@@ -387,17 +398,25 @@ class ExplicitMF:
             i = self.sample_col[idx]
             prediction = self.predict(u, i)
             e = (self.ratings[u, i] - prediction)  # error
-
-            # Update biases
+            # define an indicator matrix Y, Y_ij = 1 if R_ij > 0 and 0 otherwise
+            # y_indicator: n*m
+            y_indicator = self.ratings
+            y_indicator[y_indicator>0] = 1 
+            # # Update biases
             self.user_bias[u] += self.learning_rate * (e - self.user_bias_reg * self.user_bias[u])
             self.item_bias[i] += self.learning_rate * (e - self.item_bias_reg * self.item_bias[i])
 
-            # Update P(latent matrix k*1000)
-            # self.pic_bias[] += self.learning_rate * ()
             # Update latent factors
-            self.user_vecs[u, :] += self.learning_rate * (e * self.item_vecs[i, :] - self.user_fact_reg * self.user_vecs[u, :])
-            self.item_vecs[i, :] += self.learning_rate * (e * self.user_vecs[u, :] - self.item_fact_reg * self.item_vecs[i, :])
-            # Update P
+            # self.user_vecs[u, :] += self.learning_rate * (e * self.item_vecs[i, :] - self.user_fact_reg * self.user_vecs[u, :])
+            self.user_vecs[:, u] += self.learning_rate * (2 * self.item_vecs[:, i].dot(y_indicator * self.ratings).T) \
+             - 2 * (self.item_vecs[:, i].dot(y_indicator * (self.user_vecs[:, u].T * self.item_vecs[:, i])).T) \
+             - 2 * self._lambda_1 * self.user_vecs[:, u]
+            # self.item_vecs[i, :] += self.learning_rate * (e * self.user_vecs[u, :] - self.item_fact_reg * self.item_vecs[i, :])
+            self.item_vecs[:, i] += self.learning_rate * (2 * self.user_vecs[:, u].dot(y_indicator * self.ratings).T) \
+             - 2 * (self.user_vecs[:, u]).dot(y_indicator * (self.user_vecs[:, u].T * self.item_vecs[:, i])) \
+             - 2 * self._lambda_1 * self.item_vecs[:, i] + self. alpha * b_vecs[:, i] 
+            # Update b_vecs 
+            self.b_vecs = np.random.rand(self.n_factors, self.n_items)
             # self.pic_vecs[, :]
 
     def predict(self, u, i):
@@ -405,6 +424,8 @@ class ExplicitMF:
         if self.learning == 'als':
             return self.user_vecs[u, :].dot(self.item_vecs[i, :].T)
         elif self.learning == 'sgd':
+            # avg_rate = np.mean(self.ratings[:, u])
+
             prediction = self.global_bias + self.user_bias[u] + self.item_bias[i]
             # 加上一个视觉特征
             # self.item_vecs[i, :] = pic_latvecs[]
