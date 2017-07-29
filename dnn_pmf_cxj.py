@@ -424,9 +424,11 @@ class ExplicitMF:
              - 2 * self._lambda_1 * self.item_vecs[:, i] + self. alpha * b_vecs[:, i] 
             # Update b_vecs: k*m 先使用随机初始化来测验 最后调成negative sampling 
             self.b_vecs = np.random.rand(self.n_factors, self.n_items)
-            # Update Q interaction matrix between V and CNN 没读到一个item（v）就更新
-            self.q_vecs += self.alpha * (1 - sigmoid(self.user_vecs[:, u].T * self.q_vecs * self.cnn.T) -  \
-                (1 - sigmoid(- self.user_vecs * self.q_vecs * self.cnn)))
+            # Update Q interaction matrix between V and CNN 每读到一个item（v）就更新
+            # 每一次更新的UV都伴随着更新对应的一个Q
+            for n in range(self.n_factors):
+                self.q_vecs[n, :] += self.alpha * self.item_vecs[:, i] * (1 - sigmoid(self.user_vecs[:, u].T))
+            
 
             # self.pic_vecs[, :]
 
