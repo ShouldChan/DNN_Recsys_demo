@@ -402,7 +402,7 @@ class ExplicitMF:
     def sgd(self):
         for idx in self.training_indices:
             u = self.sample_row[idx]
-            i = self.sample_col[idx]
+            i = self.sample_col[idx] 
             prediction = self.predict(u, i)
             e = (self.ratings[u, i] - prediction)  # error
             # define an indicator matrix Y, Y_ij = 1 if R_ij > 0 and 0 otherwise
@@ -425,9 +425,10 @@ class ExplicitMF:
             # Update b_vecs: k*m 先使用随机初始化来测验 最后调成negative sampling 
             self.b_vecs = np.random.rand(self.n_factors, self.n_items)
             # Update Q interaction matrix between V and CNN 每读到一个item（v）就更新
-            # 每一次更新的UV都伴随着更新对应的一个Q
-            for n in range(self.n_factors):
-                self.q_vecs[n, :] += self.alpha * self.item_vecs[:, i] * (1 - sigmoid(self.user_vecs[:, u].T))
+            # 每一次更新的UV都伴随着更新对应的一个Q: k*d d=1000
+            for n in range(1000):
+                self.q_vecs[:, n] += self.alpha * self.item_vecs[:, i] * (1 - sigmoid(self.user_vecs[:, u].T * q_vecs[:, n] \
+                    * cnn.T)) * cnn.T - 2 * _lambda_2 * q_vecs[:, n]
             
 
             # self.pic_vecs[, :]
