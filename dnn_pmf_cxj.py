@@ -415,15 +415,20 @@ class ExplicitMF:
 
             # Update latent factors
             # self.user_vecs[u, :] += self.learning_rate * (e * self.item_vecs[i, :] - self.user_fact_reg * self.user_vecs[u, :])
+            # Update U
             self.user_vecs[:, u] += self.learning_rate * (2 * self.item_vecs[:, i].dot(y_indicator * self.ratings).T) \
              - 2 * (self.item_vecs[:, i].dot(y_indicator * (self.user_vecs[:, u].T * self.item_vecs[:, i])).T) \
              - 2 * self._lambda_1 * self.user_vecs[:, u]
             # self.item_vecs[i, :] += self.learning_rate * (e * self.user_vecs[u, :] - self.item_fact_reg * self.item_vecs[i, :])
+
+            # Update V
             self.item_vecs[:, i] += self.learning_rate * (2 * self.user_vecs[:, u].dot(y_indicator * self.ratings).T) \
              - 2 * (self.user_vecs[:, u]).dot(y_indicator * (self.user_vecs[:, u].T * self.item_vecs[:, i])) \
-             - 2 * self._lambda_1 * self.item_vecs[:, i] + self. alpha * b_vecs[:, i] 
+             - 2 * self._lambda_1 * self.item_vecs[:, i] 
+             # + self. alpha * b_vecs[:, i] 
+
             # Update b_vecs: k*m 先使用随机初始化来测验 最后调成negative sampling 
-            self.b_vecs = np.random.rand(self.n_factors, self.n_items)
+            # self.b_vecs = np.random.rand(self.n_factors, self.n_items)
             # Update Q interaction matrix between V and CNN 每读到一个item（v）就更新
             # 每一次更新的UV都伴随着更新对应的一个Q: k*d d=1000
             for n in range(1000):
