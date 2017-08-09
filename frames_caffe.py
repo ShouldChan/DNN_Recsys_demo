@@ -83,23 +83,27 @@ def extractFeature(folderpath, image_list, net):
     # num=0
     # print folderpath
     for imagefile in image_list:
-        imagefile_abs = os.path.join(folderpath, imagefile)
-        # imageId = imagefile.replace()
-        # print imagefile_abs
-        net.blobs['data'].data[...] = transformer.preprocess('data', caffe.io.load_image(imagefile_abs))
-        out = net.forward()
-        fea_file = imagefile_abs.replace('.jpg',postfix)
-        # read the features of fc6
-        feature = net.blobs['fc6'].data[0]
-        # normalization
-        feature_standard = (feature - min(feature))/(max(feature) - min(feature))
-        # transfer to list
-        tmpf = feature_standard.reshape(1,feature_standard.size)
-        s = tmpf.tolist()
-        feat=reduce(lambda x,y: x+y,s)
-        # num += 1
-        featAll.append([imagefile,feat])
-        print imagefile
+    	print imagefile
+        if imagefile.find('.jpg') != -1:
+            imagefile_abs = os.path.join(folderpath, imagefile)
+            # imageId = imagefile.replace()
+            # print imagefile_abs
+            net.blobs['data'].data[...] = transformer.preprocess('data', caffe.io.load_image(imagefile_abs))
+            out = net.forward()
+            fea_file = imagefile_abs.replace('.jpg',postfix)
+            # read the features of fc6
+            feature = net.blobs['fc6'].data[0]
+            # normalization
+            feature_standard = (feature - min(feature))/(max(feature) - min(feature))
+            # transfer to list
+            tmpf = feature_standard.reshape(1,feature_standard.size)
+            s = tmpf.tolist()
+            feat=reduce(lambda x,y: x+y,s)
+            # num += 1
+            featAll.append([imagefile,feat])
+            print imagefile
+        else:
+            continue
         # with open(fea_file,'wb') as f:
         #     for x in xrange(0, net.blobs['fc6'].data.shape[0]):
         #         for y in xrange(0, net.blobs['fc6'].data.shape[1]):
