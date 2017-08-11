@@ -206,8 +206,8 @@ def choose_arm(x, experts, explore):
     pred = preds[chosen_arm]
     return chosen_arm, pred
 
-def run_bandit_1(X, n, n_arms, explore, exp_annealing_rate=1, min_explore=.005, **kwargs):
-    # n, n_arms = Y.shape
+def run_bandit_1(X, Y, explore, exp_annealing_rate=1, min_explore=.005, **kwargs):
+    n, n_arms = Y.shape
     input_shape = X.shape[1]
     experts = build_experts(n_arms, input_shape, 32, 1)
     experts = compile_experts(experts, **kwargs)
@@ -246,7 +246,7 @@ def run_bandit_1(X, n, n_arms, explore, exp_annealing_rate=1, min_explore=.005, 
             Estimated time remaining: %.2f minutes
             --------------------'''%(i,elapsed,remaining)
     elapsed = (time.time() - start_time)/60
-    print 'Finished in: %.2f minutes'%elapsed
+    print 'Finished in: %.2f minutes'%ela
     return experts, chosen_arms, true_rewards, regrets
 
 if __name__ == "__main__":
@@ -256,6 +256,9 @@ if __name__ == "__main__":
     
     print X.shape[1]
     print X.shape
+    
+
+    Y = np.zeros((n_round, n_arms))
     
     experts = build_experts(4, X.shape[1], 32, 1)
     experts[0].summary()
