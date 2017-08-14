@@ -41,8 +41,19 @@ def read_dataset():
 
 # read_dataset()
 
+def read_context():
+    context_dic = {}
+    with open(data_dir + 'user_friends_edit.dat', 'rb') as fp:
+        lines = fp.readlines()
+        for line in lines:
+            tempdata = line.strip().split('\t')
+            userid, friendid = int(tempdata[0]), int(tempdata[1])
+            context_dic.setdefault(userid, []).append(friendid)
+        # print context_dic
+    return context_dic
 
-            
+# read_context()
+
 
 def sigmoid(x):
     return 1.0 / (1 + math.exp(-x))
