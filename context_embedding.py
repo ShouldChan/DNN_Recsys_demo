@@ -58,7 +58,7 @@ def read_context():
 def sigmoid(x):
     return 1.0 / (1 + math.exp(-x))
 
-def embedding_learning(train_data):
+def embedding_learning(train_data, context_list):
     # User-Context
     UC = np.random.normal(0.0, 0.01, (n_users, K))
     # Item-Context
@@ -89,3 +89,8 @@ def embedding_learning(train_data):
         np.save(model_dir + 'IC', IC)
         np.save(model_dir + 'UC', UC)
         print 'Model saved...'
+
+if __name__ == '__main__':
+    train_data, user_list, artist_list = read_dataset()
+    context_dic = read_context()
+    embedding_learning(train_data, context_dic)
