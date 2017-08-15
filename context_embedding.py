@@ -9,11 +9,11 @@ model_dir = './context_model/'
 
 # Parameters
 lamda = 0.03
-learning_rate = 0.05
+learning_rate = 0.005
 dis_coef = 0.25
-alpha = 0.2
-max_iters = 50
-K = 60
+alpha = 0.4
+max_iters = 100
+dim_num = 60
 
 def read_dataset():
     train_data = []
@@ -26,7 +26,8 @@ def read_dataset():
         lines = fp.readlines()
         for line  in lines:
             tempdata = line.strip().split('\t')
-            userid, artistid, weight = int(tempdata[0]), int(tempdata[1]), int(tempdata[2])
+            userid, artistid, weight = int(tempdata[0]), int(tempdata[1]), float(tempdata[2])
+            weight = weight / 5000
             train_data.append([userid, artistid, weight])
             user_set.add(userid)
             artist_set.add(artistid)
@@ -75,36 +76,33 @@ def sigmoid(x):
     return 1.0 / (1 + math.exp(-x))
 
 def embedding_learning(train_data, user_dic, artist_dic, context_list, n_users, n_items):
-    # User-Context
-    UC = np.random.normal(0.0, 0.01, (n_users, K))
-    # Item-Context
-    IC = np.random.normal(0.0, 0.01, (n_items, K))
-
-    log_likelihood = 0.0
+    # User embeddings
+    UC = np.random.normal(0.0, 0.01, (n_users, dim_num))
+    # Item embeddings
+    IC = np.random.normal(0.0, 0.01, (n_items, dim_num))
 
     try:
         for iteration in range(max_iters):
             print 'loading...iteration: %d'%iteration
             t = time.time()
+
             for each_data in train_data:
                 u_i, i, w_i = each_data
+                w_i = w_i ** dis_coef
+                # print artist_dic[i]
                 for u_j in context_list[u_i]:
-                    Di = np.linalg.norm(IC[artist_dic[i]] - UC[user_dic[u_i]]) ** 2
-                    Dj = np.linalg.norm(IC[artist_dic[i]] - UC[user_dic[u_j]]) ** 2
 
-                    z = Dj - Di
-
-                    wc = w_i ** dis_coef
+                    IC[artist_dic[i]] += learning_rate * ((1 - sigmoid(w_i)) * 2 * alpha  * (UC[user_dic[u_i]] - UC[user_dic[u_j]]) - 2 * lamda * IC[artist_dic[i]])
+                    UC[user_dic[u_i]] += learning_rate * ((1 - sigmoid(w_i)) * 2 * alpha  * (IC[artist_dic[i]] - UC[user_dic[u_i]]) - 2 * lamda * UC[user_dic[u_i]])
+                    UC[user_dic[u_j]] += learning_rate * ((1 - sigmoid(w_i)) * 2 * alpha  * (IC[artist_dic[i]] - UC[user_dic[u_j]]) - 2 * lamda * UC[user_dic[u_j]])
                     
-                    log_likelihood += np.log(sigmoid(z))
-
-                    IC[artist_dic[i]] += learning_rate * ((1 - sigmoid(z)) * 2 * alpha * wc * (UC[user_dic[u_i]] - UC[user_dic[u_j]]) - 2 * lamda * IC[artist_dic[i]])
-                    UC[user_dic[u_i]] += learning_rate * ((1 - sigmoid(z)) * 2 * alpha * wc * (IC[artist_dic[i]] - UC[user_dic[u_i]]) - 2 * lamda * UC[user_dic[u_i]])
-                    UC[user_dic[u_j]] += learning_rate * ((1 - sigmoid(z)) * 2 * alpha * wc * (IC[artist_dic[i]] - UC[user_dic[u_j]]) - 2 * lamda * UC[user_dic[u_j]])
-            print 'Iter: %d    likelihood: %f   elapsed:  %fseconds'%(iteration, log_likelihood, time.time() - t)
+                    # print IC[artist_dic[i]]
+            print 'Iter: %d   elapsed:  %fseconds'%(iteration, time.time() - t)
     finally:
-        np.save(model_dir + 'IC', IC)
-        np.save(model_dir + 'UC', UC)
+        np.save(model_dir + 'Item_Emb', IC)
+        np.save(model_dir + 'User_Emb', UC)
+        np.savetxt(model_dir + 'Item_Emb.txt', IC)
+        np.savetxt(model_dir + 'User_Emb.txt', UC)
         print 'Model saved...'
 
 if __name__ == '__main__':
