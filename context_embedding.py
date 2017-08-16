@@ -3,6 +3,11 @@ import pandas as pd
 import numpy as np
 import time
 import math
+from keras.layers import Embedding
+from keras import initializations
+from keras.regularizers import l1, l2, l1l2
+from keras.models import Sequential
+
 
 data_dir = './hetrec2011-lastfm-2k/'
 model_dir = './context_model/'
@@ -104,8 +109,17 @@ def embedding_learning(train_data, user_dic, artist_dic, context_list, n_users, 
         np.savetxt(model_dir + 'Item_Emb.txt', IC)
         np.savetxt(model_dir + 'User_Emb.txt', UC)
         print 'Model saved...'
+def init_normal(shape, name=None):
+    return initializations.normal(shape, scale=0.01, name=name)
 
 if __name__ == '__main__':
     train_data, user_dic, artist_dic, n_users, n_items = read_dataset()
     context_dic = read_context()
-    embedding_learning(train_data, user_dic, artist_dic, context_dic, n_users, n_items)
+    # embedding_learning(train_data, user_dic, artist_dic, context_dic, n_users, n_items)
+    User_Embedding = Embedding(input_dim=n_users, output_dim=60, \
+        name='user_embedding', init=init_normal,W_regularizer=l2(0),  \
+        input_length=1)
+    print type(User_Embedding)
+    Item_Embedding = Embedding(input_dim=n_items, output_dim=60, \
+        name='item_embedding', init=init_normal,W_regularizer=l2(0), \
+        input_length=1)
