@@ -8,6 +8,8 @@ from keras.layers import Embedding
 from keras import initializations
 from keras.regularizers import l1, l2, l1l2
 from keras.models import Sequential
+from keras.layers.core import Dense,Dropout,Activation,Flatten   
+from keras.optimizers import SGD, Adadelta, Adagrad,RMSprop 
 
 
 data_dir = './hetrec2011-lastfm-2k/'
@@ -127,25 +129,38 @@ def embedding_learning(train_data, user_dic, artist_dic, context_list, n_users, 
 def init_normal(shape, name=None):
     return initializations.normal(shape, scale=0.01, name=name)
 
-# if __name__ == '__main__':
-#     train_data, user_dic, artist_dic, n_users, n_items = read_dataset()
-#     context_dic = read_context()
-#     # embedding_learning(train_data, user_dic, artist_dic, context_dic, n_users, n_items)
-#     User_Embedding = Embedding(input_dim=n_users, output_dim=60, \
-#         name='user_embedding', init=init_normal,W_regularizer=l2(0),  \
-#         input_length=1)
-#     print type(User_Embedding)
-#     Item_Embedding = Embedding(input_dim=n_items, output_dim=60, \
-#         name='item_embedding', init=init_normal,W_regularizer=l2(0), \
-#         input_length=1)
-#     model = Sequential()
-#     model.add(Item_Embedding)
-#     model.add(Dense(32, input_dim=784))
-#     model.add(Activation('relu'))
+if __name__ == '__main__':
+    all_data, user_dic, artist_dic, n_users, n_items = read_dataset()
+    context_dic = read_context()
+    # train_data, test_data, n_train, n_test = make_train_test(all_data)
+    # embedding_learning(train_data, user_dic, artist_dic, context_dic, n_users, n_items)
 
-#     model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
+    User_Embedding = Embedding(input_dim=n_users, output_dim=60, \
+        name='user_embedding', init=init_normal,W_regularizer=l2(0),  \
+        input_length=1)
+    # print type(User_Embedding)
 
-#     x = train_data
-#     y = 
-#     fit(self, x, y, batch_size=32, epochs=10, verbose=1, callbacks=None,  \
-#         validation_split=0.0, validation_data=None, shuffle=True, class_weight=None, sample_weight=None, initial_epoch=0)
+    Item_Embedding = Embedding(input_dim=n_items, output_dim=60, \
+        name='item_embedding', init=init_normal,W_regularizer=l2(0), \
+        input_length=1)
+
+    model = Sequential()
+    model.add(Embedding(n_items, 60, input_length=10))
+    # model.add(Dense(32, input_dim=n_items))
+    # model.add(Activation('relu'))
+
+    input_array = np.random.randint(50000, size=(n_items, 10))
+    print 'input_array:\t'
+    print input_array.shape
+
+    # model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
+    model.compile('rmsprop', 'mse')
+
+    output_array = model.predict(input_array)
+    print 'output_array:\t'
+    print output_array.shape
+
+    # x = all_data
+    # y = 
+    # fit(self, x, y, batch_size=32, epochs=10, verbose=1, callbacks=None,  \
+    #     validation_split=0.2, validation_data=None, shuffle=True, class_weight=None, sample_weight=None, initial_epoch=0)
