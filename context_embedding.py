@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import time
 import math
+import random
 from keras.layers import Embedding
 from keras import initializations
 from keras.regularizers import l1, l2, l1l2
@@ -20,8 +21,9 @@ alpha = 0.4
 max_iters = 100
 dim_num = 60
 
+
 def read_dataset():
-    train_data = []
+    all_data = []
     user_set = set()
     user_list = []
     artist_set = set()
@@ -33,7 +35,7 @@ def read_dataset():
             tempdata = line.strip().split('\t')
             userid, artistid, weight = int(tempdata[0]), int(tempdata[1]), float(tempdata[2])
             weight = weight / 5000
-            train_data.append([userid, artistid, weight])
+            all_data.append([userid, artistid, weight])
             user_set.add(userid)
             artist_set.add(artistid)
         
@@ -59,9 +61,22 @@ def read_dataset():
         artist_dic[i] = count_artist
         count_artist += 1
     # print artist_dic
-    return train_data, user_dic, artist_dic, n_users, n_items
+    return all_data, user_dic, artist_dic, n_users, n_items
 
-# read_dataset()
+# all_data, user_dic, artist_dic, n_users, n_items = read_dataset()
+
+def make_train_test(all_data):
+    test_data = []
+    test_num = int(len(all_data) * 0.25)
+    test_data = random.sample(all_data, test_num)
+    print test_data
+    train_data = [i for i in all_data if i not in test_data]
+    n_train = len(train_data)
+    n_test = len(test_data)
+    print n_train, n_test
+    return train_data, test_data, n_train, n_test
+
+# make_train_test(all_data)
 
 def read_context():
     context_dic = {}
@@ -112,14 +127,25 @@ def embedding_learning(train_data, user_dic, artist_dic, context_list, n_users, 
 def init_normal(shape, name=None):
     return initializations.normal(shape, scale=0.01, name=name)
 
-if __name__ == '__main__':
-    train_data, user_dic, artist_dic, n_users, n_items = read_dataset()
-    context_dic = read_context()
-    # embedding_learning(train_data, user_dic, artist_dic, context_dic, n_users, n_items)
-    User_Embedding = Embedding(input_dim=n_users, output_dim=60, \
-        name='user_embedding', init=init_normal,W_regularizer=l2(0),  \
-        input_length=1)
-    print type(User_Embedding)
-    Item_Embedding = Embedding(input_dim=n_items, output_dim=60, \
-        name='item_embedding', init=init_normal,W_regularizer=l2(0), \
-        input_length=1)
+# if __name__ == '__main__':
+#     train_data, user_dic, artist_dic, n_users, n_items = read_dataset()
+#     context_dic = read_context()
+#     # embedding_learning(train_data, user_dic, artist_dic, context_dic, n_users, n_items)
+#     User_Embedding = Embedding(input_dim=n_users, output_dim=60, \
+#         name='user_embedding', init=init_normal,W_regularizer=l2(0),  \
+#         input_length=1)
+#     print type(User_Embedding)
+#     Item_Embedding = Embedding(input_dim=n_items, output_dim=60, \
+#         name='item_embedding', init=init_normal,W_regularizer=l2(0), \
+#         input_length=1)
+#     model = Sequential()
+#     model.add(Item_Embedding)
+#     model.add(Dense(32, input_dim=784))
+#     model.add(Activation('relu'))
+
+#     model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
+
+#     x = train_data
+#     y = 
+#     fit(self, x, y, batch_size=32, epochs=10, verbose=1, callbacks=None,  \
+#         validation_split=0.0, validation_data=None, shuffle=True, class_weight=None, sample_weight=None, initial_epoch=0)
