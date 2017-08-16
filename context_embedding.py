@@ -142,23 +142,23 @@ if __name__ == '__main__':
 
     Item_Embedding = Embedding(input_dim=n_items, output_dim=60, \
         name='item_embedding', init=init_normal,W_regularizer=l2(0), \
-        input_length=1)
+        input_length=10)
 
     model = Sequential()
-    model.add(Embedding(n_items, 60, input_length=10))
-    # model.add(Dense(32, input_dim=n_items))
-    # model.add(Activation('relu'))
+    model.add(Item_Embedding)
+    model.add(Dense(32, input_dim=n_items))
+    model.add(Activation('relu'))
 
     input_array = np.random.randint(50000, size=(n_items, 10))
     print 'input_array:\t'
     print input_array.shape
 
     # model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
-    model.compile('rmsprop', 'mse')
+    model.compile(loss='mean_squared_error', optimizer='sgd')
 
-    output_array = model.predict(input_array)
-    print 'output_array:\t'
-    print output_array.shape
+    # output_array = model.predict(input_array)
+    # print 'output_array:\t'
+    # print output_array.shape
 
     # x = all_data
     # y = 
