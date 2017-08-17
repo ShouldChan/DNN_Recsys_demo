@@ -63,7 +63,7 @@ def read_dataset():
         artist_dic[i] = count_artist
         count_artist += 1
     # print artist_dic
-    return all_data, user_dic, artist_dic, n_users, n_items
+    return all_data, user_dic, artist_dic, user_list, artist_list, n_users, n_items
 
 # all_data, user_dic, artist_dic, n_users, n_items = read_dataset()
 
@@ -130,7 +130,7 @@ def init_normal(shape, name=None):
     return initializations.normal(shape, scale=0.01, name=name)
 
 if __name__ == '__main__':
-    all_data, user_dic, artist_dic, n_users, n_items = read_dataset()
+    all_data, user_dic, artist_dic, user_list, artist_list, n_users, n_items = read_dataset()
     context_dic = read_context()
     # train_data, test_data, n_train, n_test = make_train_test(all_data)
     # embedding_learning(train_data, user_dic, artist_dic, context_dic, n_users, n_items)
@@ -142,25 +142,44 @@ if __name__ == '__main__':
 
     Item_Embedding = Embedding(input_dim=n_items, output_dim=60, \
         name='item_embedding', init=init_normal,W_regularizer=l2(0), \
-        input_length=10)
+        input_length=n_users)
 
+    # model = Sequential()
+    # model.add(Item_Embedding)
+    # model.add(Dense(32, input_dim=n_items))
+    # model.add(Activation('relu'))
+
+    # input_array = np.random.randint(50000, size=(n_items, n_users))
+    # print 'input_array:\t'
+    # print input_array.shape
+
+    # # model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
+    # model.compile(loss='mean_squared_error', optimizer='sgd')
+
+    # print 'begin to train'
+
+    # labels = np.array(artist_list)
+    # print labels.shape
+
+    # model.fit(input_array, labels, batch_size=32, nb_epoch=10)
+    # test = np.random.randint(50000, size=(100, 10))
+    # classes = model.predict(test)
+    # print classes
     model = Sequential()
-    model.add(Item_Embedding)
-    model.add(Dense(32, input_dim=n_items))
-    model.add(Activation('relu'))
+    model.add(Dense(32, activation='relu', input_dim=100))
+    model.add(Dense(10, activation='softmax'))
+    model.compile(optimizer='rmsprop',
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
 
-    input_array = np.random.randint(50000, size=(n_items, 10))
-    print 'input_array:\t'
-    print input_array.shape
+    # Generate dummy data
+    import numpy as np
+    data = np.random.random((1000, 100))
+    labels = np.random.randint(10, size=(1000, 1))
 
-    # model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
-    model.compile(loss='mean_squared_error', optimizer='sgd')
+    import keras.utils
+    # Convert labels to categorical one-hot encoding
+    one_hot_labels = keras.utils.to_categorical(labels, num_classes=10)
 
-    # output_array = model.predict(input_array)
-    # print 'output_array:\t'
-    # print output_array.shape
-
-    # x = all_data
-    # y = 
-    # fit(self, x, y, batch_size=32, epochs=10, verbose=1, callbacks=None,  \
-    #     validation_split=0.2, validation_data=None, shuffle=True, class_weight=None, sample_weight=None, initial_epoch=0)
+    # Train the model, iterating on the data in batches of 32 samples
+    model.fit(data, one_hot_labels, epochs=10, batch_size=32)
