@@ -4,7 +4,7 @@ import numpy as np
 import time
 import math
 import random
-from keras.layers import Embedding
+from keras.layers import Embedding, Merge, LSTM, Input
 from keras import initializations
 from keras.regularizers import l1, l2, l1l2
 from keras.models import Sequential
@@ -137,7 +137,7 @@ if __name__ == '__main__':
 
     User_Embedding = Embedding(input_dim=n_users, output_dim=60, \
         name='user_embedding', init=init_normal,W_regularizer=l2(0),  \
-        input_length=1)
+        input_length=n_items)
     # print type(User_Embedding)
 
     Item_Embedding = Embedding(input_dim=n_items, output_dim=60, \
@@ -172,7 +172,7 @@ if __name__ == '__main__':
     # model.add(Dense(10, activation='softmax'))
     # model.compile(optimizer='rmsprop',
     #               loss='categorical_crossentropy',
-    #               metrics=['accuracy'])
+    #               metrics=['accuracy'])w
 
     # # Generate dummy data
     # import numpy as np
@@ -187,15 +187,44 @@ if __name__ == '__main__':
     # model.fit(data, one_hot_labels, epochs=10, batch_size=32)
 
     # test_3
-    model = Sequential()
-    model.add(Dense(32, activation='relu', input_dim=100))
-    model.add(Dense(1, activation='sigmoid'))
-    model.compile(optimizer='rmsprop', \
-        loss='binary_crossentropy', \
-        metrics=['accuracy'])
+    # model = Sequential()
+    # model.add(Dense(32, activation='relu', input_dim=100))
+    # model.add(Dense(1, activation='sigmoid'))
+    # model.compile(optimizer='rmsprop', \
+    #     loss='binary_crossentropy', \
+    #     metrics=['accuracy'])
 
-    data = np.random.random((1000, 100))
-    print data.shape
-    labels = np.random.randint(2, size=(1000, 1))
+    # data = np.random.random((1000, 100))
+    # print data.shape
+    # labels = np.random.randint(2, size=(1000, 1))
 
-    model.fit(data, labels, nb_epoch=10, batch_size=32)
+    # model.fit(data, labels, nb_epoch=10, batch_size=32)
+
+    # test_merge
+    left_branch = Sequential()
+    left_branch.add(Embedding(1000, 32, input_length=None))
+    left_branch.add(Dense(32, input_dim=100))
+
+    right_branch = Sequential()
+    right_branch.add(Embedding(1000, 32, input_length=None))
+    right_branch.add(Dense(32, input_dim=100))
+
+    merged = Merge([left_branch, right_branch], mode='concat')
+
+    final_model = Sequential()
+    final_model.add(merged)
+    final_model.add(Dense(10, activation='softmax'))
+
+    final_model.compile(optimizer='rmsprop', \
+            loss='binary_crossentropy', \
+            metrics=['accuracy'])
+
+    data_1 = np.random.random((1000, 100))
+    data_2 = np.random.random((1000, 100))
+
+    from keras.utils.np_utils import to_categorical
+    labels = np.random.randint(10, size=(1000, 1))
+    labels = to_categorical(labels, 10)
+
+    
+    final_model.fit([data_1, data_2], labels, nb_epoch=10, batch_size=32)
