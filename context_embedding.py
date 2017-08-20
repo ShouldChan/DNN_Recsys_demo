@@ -143,7 +143,7 @@ if __name__ == '__main__':
     Item_Embedding = Embedding(input_dim=n_items, output_dim=60, \
         name='item_embedding', init=init_normal,W_regularizer=l2(0), \
         input_length=n_users)
-
+    # test_1
     # model = Sequential()
     # model.add(Item_Embedding)
     # model.add(Dense(32, input_dim=n_items))
@@ -165,21 +165,37 @@ if __name__ == '__main__':
     # test = np.random.randint(50000, size=(100, 10))
     # classes = model.predict(test)
     # print classes
+
+    # test_2
+    # model = Sequential()
+    # model.add(Dense(32, activation='relu', input_dim=100))
+    # model.add(Dense(10, activation='softmax'))
+    # model.compile(optimizer='rmsprop',
+    #               loss='categorical_crossentropy',
+    #               metrics=['accuracy'])
+
+    # # Generate dummy data
+    # import numpy as np
+    # data = np.random.random((1000, 100))
+    # labels = np.random.randint(10, size=(1000, 1))
+
+    # import keras.utils
+    # # Convert labels to categorical one-hot encoding
+    # one_hot_labels = keras.utils.to_categorical(labels, num_classes=10)
+
+    # # Train the model, iterating on the data in batches of 32 samples
+    # model.fit(data, one_hot_labels, epochs=10, batch_size=32)
+
+    # test_3
     model = Sequential()
     model.add(Dense(32, activation='relu', input_dim=100))
-    model.add(Dense(10, activation='softmax'))
-    model.compile(optimizer='rmsprop',
-                  loss='categorical_crossentropy',
-                  metrics=['accuracy'])
+    model.add(Dense(1, activation='sigmoid'))
+    model.compile(optimizer='rmsprop', \
+        loss='binary_crossentropy', \
+        metrics=['accuracy'])
 
-    # Generate dummy data
-    import numpy as np
     data = np.random.random((1000, 100))
-    labels = np.random.randint(10, size=(1000, 1))
+    print data.shape
+    labels = np.random.randint(2, size=(1000, 1))
 
-    import keras.utils
-    # Convert labels to categorical one-hot encoding
-    one_hot_labels = keras.utils.to_categorical(labels, num_classes=10)
-
-    # Train the model, iterating on the data in batches of 32 samples
-    model.fit(data, one_hot_labels, epochs=10, batch_size=32)
+    model.fit(data, labels, nb_epoch=10, batch_size=32)
