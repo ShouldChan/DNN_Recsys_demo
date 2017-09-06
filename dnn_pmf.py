@@ -379,14 +379,30 @@ def DNNPMF(ratings, n_factors=40, learning_rate=0.01, _lambda_1=0.01, _lambda_2=
             print 'current iteration:{}'.format(ctr)
         training_indices = np.arrange(n_samples)
         np.random.shuffle(training_indices)
-        sgd(sample_row, sample_col, training_indices)
+        # sgd(ratings, sample_row, sample_col, training_indices, user_vecs, item_vecs)
+        # sgd
+        for idx in training_indices:
+            u = sample_row[idx]
+            i = sample_row[idx]
+            print u,i
+            prediction = predict(user_vecs, item_vecs, u, i)
+            error = (ratings[u, i] - prediction)
+            # Update U
+            user_vecs[:, u] += learning_rate * (2 * item_vecs[:, i].dot(I_indicator * ratings).T) \
+             - 2 * (item_vecs[:, i].dot(I_indicator * (user_vecs[:, u].T * item_vecs[:, i])).T) \
+             - 2 * _lambda_1 * user_vecs[:, u]
+            # Update V
+            item_vecs[:, i] += learning_rate * (2 * user_vecs[:, u].dot(I_indicator * ratings).T) \
+             - 2 * (user_vecs[:, u]).dot(I_indicator * (user_vecs[:, u].T * item_vecs[:, i])) \
+             - 2 * _lambda_1 * item_vecs[:, i] + alpha * b_vecs
+
+            # Update b_vecs 
+            
         ctr += 1
 
-def sgd(training_indices):
-    for idx in training_indices:
-        u = sample_row[idx]
-        i = sample_col[idx]
-        
+# sgd predict
+def predict(user_vecs, item_vecs, u, i):
+    return user_vecs[u, :].dot(item_vecs[i, :].T)
 
 
 if __name__ == "__main__":
