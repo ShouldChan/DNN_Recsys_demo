@@ -339,41 +339,54 @@ def get_picfeature(poster_path):
 
 # dnn+pmf
 def DNNPMF(ratings, n_factors=40, learning_rate=0.01, _lambda_1=0.01, _lambda_2=0.01, alpha=0.01):
-	# ratings: ndarray
-	# 1.define an indicator matrix I, I_ij = 1 if R_ij > 0 and 0 otherwise
-	I_indicator = ratings
-	I_indicator[I_indicator>0] = 1
-	I_indicator[I_indicator<=0] = 0
-	# print I_indicator
+    # ratings: ndarray
+    # 1.define an indicator matrix I, I_ij = 1 if R_ij > 0 and 0 otherwise
+    I_indicator = ratings
+    I_indicator[I_indicator>0] = 1
+    I_indicator[I_indicator<=0] = 0
+    # print I_indicator
 
-	# 2.learning == 'sgd'
-	# nonzero返回非零元素的索引值数组 
-	# 二维数组的话第一个array从行角度描述其索引值，第二个从列
-	sample_row, sample_col = ratings.nonzero()
- 	n_samples = len(sample_row) # 非零元素的个数 为正例
- 	# print sample_row, sample_col
- 	# print n_samples
+    # 2.learning == 'sgd'
+    # nonzero返回非零元素的索引值数组 
+    # 二维数组的话第一个array从行角度描述其索引值，第二个从列
+    sample_row, sample_col = ratings.nonzero()
+    n_samples = len(sample_row) # 非零元素的个数 为正例
+    # print sample_row, sample_col
+    # print n_samples
 
- 	# 3.initialize U V
- 	n_users, n_items=ratings.shape
- 	# print n_users, n_items
- 	user_vecs = np.random.normal(scale=1./n_factors, \
- 		size=(n_users, n_factors))
- 	item_vecs = np.random.normal(scale=1./n_factors, \
- 		size=(n_items, n_factors))
- 	# print user_vecs, item_vecs
- 	# (2113, 40) (8887, 40)
- 	print user_vecs.shape, item_vecs.shape
+    # 3.initialize U V
+    n_users, n_items=ratings.shape
+    # print n_users, n_items
+    user_vecs = np.random.normal(scale=1./n_factors, \
+        size=(n_users, n_factors))
+    item_vecs = np.random.normal(scale=1./n_factors, \
+        size=(n_items, n_factors))
+    # print user_vecs, item_vecs
+    # (2113, 40) (8887, 40)
+    print user_vecs.shape, item_vecs.shape
 
- 	# 4.get CNN vec of images 1*1000
-    poster_path = './1.jpg'
-    with open('./valid_movieid_imdbid.txt', 'rb') as fread:
+    # 4.get CNN vec of images 1*1000
+    # poster_path = './1.jpg'
+    # with open('./valid_movieid_imdbid.txt', 'rb') as fread:
+        # 
+    # cnn_vecs = get_picfeature(poster_path)
+
+    # 5.partial train sgd
+    n_iter = 30
+    ctr = 1
+    while ctr <= n_iter:
+        if ctr % 10 ==0:
+            print 'current iteration:{}'.format(ctr)
+        training_indices = np.arrange(n_samples)
+        np.random.shuffle(training_indices)
+        sgd(sample_row, sample_col, training_indices)
+        ctr += 1
+
+def sgd(training_indices):
+    for idx in training_indices:
+        u = sample_row[idx]
+        i = sample_col[idx]
         
-    cnn_vecs = get_picfeature(poster_path)
-
-    # 5.
-
-
 
 
 if __name__ == "__main__":
@@ -420,4 +433,4 @@ if __name__ == "__main__":
 
     # print(iter_array)
     # print(MF_SGD.test_mse)
-    # DNNPMF(train_data_matrix)
+    DNNPMF(train_data_matrix)
