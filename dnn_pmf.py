@@ -396,14 +396,24 @@ def DNNPMF(ratings, n_factors=40, learning_rate=0.01, _lambda_1=0.01, _lambda_2=
              - 2 * (user_vecs[:, u]).dot(I_indicator * (user_vecs[:, u].T * item_vecs[:, i])) \
              - 2 * _lambda_1 * item_vecs[:, i] + alpha * b_vecs
 
-            # Update b_vecs 
-            
+            # Update b_vecs k*m
+            b_vecs = np.random.rand(n_factors, n_items)
+            # Update Q
+
         ctr += 1
 
 # sgd predict
 def predict(user_vecs, item_vecs, u, i):
     return user_vecs[u, :].dot(item_vecs[i, :].T)
 
+# predict ratings for every user and item
+def predict_all(user_vecs, item_vecs):
+    predictions = np.zeros((user_vecs.shape[0], item_vecs.shape[0]))
+    for u in range(user_vecs.shape[0]):
+        for i in range(item_vecs.shape[0]):
+            predictions[u, i] = predict(user_vecs, item_vecs, u, i)
+
+    return predictions
 
 if __name__ == "__main__":
     # step1-------read dataset
