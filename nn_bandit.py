@@ -302,95 +302,12 @@ def run_bandit_2(X, Y):
     model_10 = build_experts(n_arms, input_shape, n_hidden=128, n_layers=2)
     model_10 = compile_experts(model_10, loss='binary_crossentropy', optimizer='adam')
 
-def get_model_probabilities(weights, gamma_model):
-    # get probabilites of choosing each model
-    p = np.array([(1-gamma_model)*weight/sum(weights) + gamma_model/n_models for weight in weights])
-    return p
-
-def choose_model(weights, gamma_model, model_probabilities):
-    # choose a model based on weights
-    n_models = len(weights)
-    model = np.random.choice(np.arange(n_models), p=model_probabilities)
-    return model
-
-if __name__ == "__main__":
-    df, users, items, n_users, n_items = read_dataset()
-    print len(df)
-    X = df.values[-20:,:]  #remove the first line(the colume description)
-    
-    print X.shape[1]
-    print X.shape
-    
-    n_round = 20
-    n_arms = 7
-    Y = np.zeros((n_round, n_arms))
-
-    # experts = build_experts(4, X.shape[1], 32, 1)
-    # experts[0].summary()
-
-    # sample run bandit_1
-    # n_points = 100
-
-    # fit_models_1, arm_hist_1, true_reward_hist_1, regret_hist_1 = run_bandit_1(X[:n_points], Y[:n_points], optimizer='adam', loss='binary_crossentropy', explore=.005, exp_annealing_rate=1, clipnorm=1.)
-
-    # smaple run bandit_2
-        # neural bandit 2
-    # get shapes and number of arms
-    n, n_arms = Y.shape
-    input_shape = X.shape[1]
-
-    # init models
-    # 32 hidden units, 1 hidden layer, explore = .005
-    model_1 = build_experts(n_arms, input_shape, n_hidden=32, n_layers=1)
-    model_1 = compile_experts(model_1, loss='binary_crossentropy', optimizer='adam')
-
-    # 64 hidden units, 1 hidden layer, explore = .005
-    model_2 = build_experts(n_arms, input_shape, n_hidden=64, n_layers=1)
-    model_2 = compile_experts(model_2, loss='binary_crossentropy', optimizer='adam')
-
-    # 128 hidden units, 1 hidden layer, explore = .005
-    model_3 = build_experts(n_arms, input_shape, n_hidden=128, n_layers=1)
-    model_3 = compile_experts(model_3, loss='binary_crossentropy', optimizer='adam')
-
-
-    # 64 hidden units, 2 hidden layers, explore = .005
-    model_4 = build_experts(n_arms, input_shape, n_hidden=64, n_layers=2)
-    model_4 = compile_experts(model_4, loss='binary_crossentropy', optimizer='adam')
-
-
-    # 64 hidden units, 2 hidden layers, explore = .005
-    model_5 = build_experts(n_arms, input_shape, n_hidden=128, n_layers=2)
-    model_5 = compile_experts(model_5, loss='binary_crossentropy', optimizer='adam')
-
-
-    # 32 hidden units, 1 hidden layer, annealing_explore
-    model_6 = build_experts(n_arms, input_shape, n_hidden=32, n_layers=1)
-    model_6 = compile_experts(model_6, loss='binary_crossentropy', optimizer='adam')
-
-    # 64 hidden units, 1 hidden layer, annealing_explore
-    model_7 = build_experts(n_arms, input_shape, n_hidden=64, n_layers=1)
-    model_7 = compile_experts(model_7, loss='binary_crossentropy', optimizer='adam')
-
-    # 128 hidden units, 1 hidden layer, annealing_explore
-    model_8 = build_experts(n_arms, input_shape, n_hidden=128, n_layers=1)
-    model_8 = compile_experts(model_8, loss='binary_crossentropy', optimizer='adam')
-
-
-    # 64 hidden units, 2 hidden layers, annealing_explore
-    model_9 = build_experts(n_arms, input_shape, n_hidden=64, n_layers=2)
-    model_9 = compile_experts(model_9, loss='binary_crossentropy', optimizer='adam')
-
-
-    # 64 hidden units, 2 hidden layers, annealing_explore
-    model_10 = build_experts(n_arms, input_shape, n_hidden=128, n_layers=2)
-    model_10 = compile_experts(model_10, loss='binary_crossentropy', optimizer='adam')
-
     # set n_steps and model exploration parameter
     n_steps = 100
-    gamma_model=.1
+    gamma_model=.05
 
     # collect models, only 4 in the interest of time
-    models = [model_2, model_4, model_7, model_9]
+    models = [model_1, model_2, model_4, model_7]
     n_models = len(models)
     # init weight vector
     weights = np.ones(n_models)
@@ -446,3 +363,40 @@ if __name__ == "__main__":
             elapsed = time.time()-start_time
             print 'Step %d complete in %.2f seconds.'%(step,elapsed)
             next_check *= 2
+    return arm_hist_2, model_hist_2, regret_hist_2, weight_hist_2
+
+def get_model_probabilities(weights, gamma_model):
+    # get probabilites of choosing each model
+    n_models = len(weights)
+    p = np.array([(1-gamma_model)*weight/sum(weights) + gamma_model/n_models for weight in weights])
+    return p
+
+def choose_model(weights, gamma_model, model_probabilities):
+    # choose a model based on weights
+    n_models = len(weights)
+    model = np.random.choice(np.arange(n_models), p=model_probabilities)
+    return model
+
+if __name__ == "__main__":
+    df, users, items, n_users, n_items = read_dataset()
+    # print len(df)
+    X = np.load('./context_model/Item_Emb.npy')
+    # X = df.values[-20:,:]  #remove the first line(the colume description)
+    
+    print X.shape[1]
+    print X.shape
+    
+    n_round = X.shape[0]
+    n_arms = 7
+    Y = np.zeros((n_round, n_arms))
+
+    # experts = build_experts(4, X.shape[1], 32, 1)
+    # experts[0].summary()
+
+    # sample run bandit_1
+    # n_points = 100
+
+    # fit_models_1, arm_hist_1, true_reward_hist_1, regret_hist_1 = run_bandit_1(X[:n_points], Y[:n_points], optimizer='adam', loss='binary_crossentropy', explore=.005, exp_annealing_rate=1, clipnorm=1.)
+
+    arm_hist_2, model_hist_2, regret_hist_2, weight_hist_2 = run_bandit_2(X,Y)
+    print regret_hist_2
