@@ -344,7 +344,7 @@ def DNNPMF(ratings, n_factors=40, learning_rate=0.01, _lambda_1=0.01, _lambda_2=
     I_indicator = ratings
     I_indicator[I_indicator>0] = 1
     I_indicator[I_indicator<=0] = 0
-    # print I_indicator
+    print I_indicator.shape
 
     # 2.learning == 'sgd'
     # nonzero返回非零元素的索引值数组 
@@ -358,9 +358,9 @@ def DNNPMF(ratings, n_factors=40, learning_rate=0.01, _lambda_1=0.01, _lambda_2=
     n_users, n_items=ratings.shape
     # print n_users, n_items
     user_vecs = np.random.normal(scale=1./n_factors, \
-        size=(n_users, n_factors))
+        size=(n_factors, n_users))
     item_vecs = np.random.normal(scale=1./n_factors, \
-        size=(n_items, n_factors))
+        size=(n_factors, n_items))
     # print user_vecs, item_vecs
     # (2113, 40) (8887, 40)
     print user_vecs.shape, item_vecs.shape
@@ -377,34 +377,54 @@ def DNNPMF(ratings, n_factors=40, learning_rate=0.01, _lambda_1=0.01, _lambda_2=
     while ctr <= n_iter:
         if ctr % 10 ==0:
             print 'current iteration:{}'.format(ctr)
-        training_indices = np.arrange(n_samples)
+        training_indices = np.arange(n_samples)
         np.random.shuffle(training_indices)
         # sgd(ratings, sample_row, sample_col, training_indices, user_vecs, item_vecs)
         # sgd
-        for idx in training_indices:
-            u = sample_row[idx]
-            i = sample_row[idx]
-            print u,i
-            prediction = predict(user_vecs, item_vecs, u, i)
-            error = (ratings[u, i] - prediction)
-            # Update U
-            user_vecs[:, u] += learning_rate * (2 * item_vecs[:, i].dot(I_indicator * ratings).T) \
-             - 2 * (item_vecs[:, i].dot(I_indicator * (user_vecs[:, u].T * item_vecs[:, i])).T) \
-             - 2 * _lambda_1 * user_vecs[:, u]
-            # Update V
-            item_vecs[:, i] += learning_rate * (2 * user_vecs[:, u].dot(I_indicator * ratings).T) \
-             - 2 * (user_vecs[:, u]).dot(I_indicator * (user_vecs[:, u].T * item_vecs[:, i])) \
-             - 2 * _lambda_1 * item_vecs[:, i] + alpha * b_vecs
+        # Update U
+        user_vecs+=user_vecs+learning_rate*(2*item_vecs.dot(I_indicator*ratings).T \
+            -2*item_vecs.dot(I_indicator*((user_vecs.T).dot(item_vecs))).T \
+            -2*_lambda_1*user_vecs)
 
-            # Update b_vecs k*m
-            b_vecs = np.random.rand(n_factors, n_items)
-            # Update Q
+        # Update B
+        b_vecs=np.random.rand(n_factors,n_items)
+
+        #  Update V
+        item_vecs+=item_vecs+learning_rate*(2*user_vecs.dot(I_indicator*ratings) \
+            -2*user_vecs.dot(I_indicator*((user_vecs.T).dot(item_vecs))) \
+            -2*_lambda_1*user_vecs+alpha*b_vecs)
+
+        # Update Q
+        
+        # for idx in training_indices:
+        #     u = sample_row[idx]
+        #     i = sample_col[idx]
+        #     # print u,i
+        #     prediction = predict(user_vecs, item_vecs, u, i)
+        #     error = (ratings[u, i] - prediction)
+        #     # Update U
+        #     # I_indicator = user_vecs[:, u]
+        #     # I_indicator[I_indicator>0] = 1
+        #     # I_indicator[I_indicator<=0] = 0
+        #     # user_vecs[:, u] += - 2 * (item_vecs[:, i].dot((user_vecs[:, u].T * item_vecs[:, i])).T)
+        #     user_vecs[:, u] += learning_rate * (2 * item_vecs[:, i].dot(I_indicator * ratings).T) \
+        #      - 2 * (item_vecs[:, i].dot(I_indicator * (user_vecs[:, u].T * item_vecs[:, i])).T) \
+        #      - 2 * _lambda_1 * user_vecs[:, u]
+        #     # Update V
+        #     # item_vecs[:, i] += -2*_lambda_1*item_vecs[:, i]
+        #     item_vecs[:, i] += learning_rate * (2 * user_vecs[:, u].dot(I_indicator * ratings).T) \
+        #      - 2 * (user_vecs[:, u]).dot(I_indicator * (user_vecs[:, u].T * item_vecs[:, i])) \
+        #      - 2 * _lambda_1 * item_vecs[:, i] + alpha * b_vecs
+
+        #     # Update b_vecs k*m
+        #     b_vecs = np.random.rand(n_factors, n_items)
+        #     # Update Q
 
         ctr += 1
 
 # sgd predict
 def predict(user_vecs, item_vecs, u, i):
-    return user_vecs[u, :].dot(item_vecs[i, :].T)
+    return user_vecs[:, u].dot(item_vecs[:, i].T)
 
 # predict ratings for every user and item
 def predict_all(user_vecs, item_vecs):
@@ -428,7 +448,7 @@ if __name__ == "__main__":
     # step3----------make train and test dataset
     train_data_matrix, test_data_matrix  = make_traintest(df, uid_2_uindex, iid_2_iindex)
     print 'step3--make train and test dataset\telapse:', time.time() - t
-    print type(train_data_matrix)
+    # print type(train_data_matrix)
 
     # step4---------calculate sparsity
     print calc_sparsity(df, n_users, n_items)
@@ -459,4 +479,7 @@ if __name__ == "__main__":
 
     # print(iter_array)
     # print(MF_SGD.test_mse)
+    print train_data_matrix.shape
+    # print train_data_matrix[2114]
+    train_data_matrix=np.random.rand(2113, 8887)
     DNNPMF(train_data_matrix)
