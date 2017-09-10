@@ -6,6 +6,8 @@ import pandas as pd
 import time
 import tensorflow as tf
 
+np.seterr(invalid='ignore')
+
 weight_file = './vgg16_weights.npz'
 
 # vgg16 model
@@ -473,9 +475,9 @@ if __name__ == "__main__":
     iindex_2_iid = dict((value,key) for key,value in iid_2_iindex.iteritems())
     # print iindex_2_iid[7257] #test
     # print valid_movieid #test
-    print train_data_matrix
-    print test_data_matrix
-    # DNNPMF(train_data_matrix, iindex_2_iid)  
+    # print train_data_matrix #test
+    # print test_data_matrix #test
+    DNNPMF(train_data_matrix, iindex_2_iid)  
 
     # step5---------use vgg16 to extract the pic features
     # with open('./movie_ID_Jpg.txt', 'rb') as fopen:
