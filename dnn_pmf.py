@@ -258,8 +258,8 @@ def read_dataset():
     n_users = users.shape[0]
     n_items = items.shape[0]
 
-    print type(users)
-    print users
+    # print type(users)
+    # print users
     # print items
     print n_users, n_items
     return df, users, items, n_users, n_items
@@ -308,6 +308,15 @@ def calc_sparsity(df, n_users, n_items):
     spar_2_str = str(sparsity * 100) + '%'
     return spar_2_str
 
+def read_validId():
+    valid_movieid = {}
+    with open('./valid_movieid_imdbid.txt', 'rb') as fread:
+        lines = fread.readlines()
+        for line in lines:
+            temp = line.strip().split('\t')
+            movieid, imdbid = temp[0], temp[1]
+            valid_movieid[movieid] = imdbid
+    return valid_movieid
 # mse
 def get_mse(pred, actual):
     # Ignore nonzero terms.
@@ -338,7 +347,7 @@ def get_picfeature(poster_path):
     return feature_vector
 
 # dnn+pmf
-def DNNPMF(ratings, n_factors=40, learning_rate=0.01, _lambda_1=0.01, _lambda_2=0.01, alpha=0.01):
+def DNNPMF(ratings, iindex_2_iid, n_factors=40, learning_rate=0.01, _lambda_1=0.01, _lambda_2=0.01, alpha=0.01):
     # ratings: ndarray
     # 1.define an indicator matrix I, I_ij = 1 if R_ij > 0 and 0 otherwise
     I_indicator = ratings
@@ -366,9 +375,10 @@ def DNNPMF(ratings, n_factors=40, learning_rate=0.01, _lambda_1=0.01, _lambda_2=
     print user_vecs.shape, item_vecs.shape
 
     # 4.get CNN vec of images 1*1000
-    poster_path = './1.jpg'
-    # with open('./valid_movieid_imdbid.txt', 'rb') as fread:
-        
+    # poster_path = './1.jpg'
+    
+    # for i in range(n_items):
+    #     print 
     # cnn_vecs = get_picfeature(poster_path)
 
     # 5.partial train sgd
@@ -454,13 +464,18 @@ if __name__ == "__main__":
     # step4---------calculate sparsity
     print calc_sparsity(df, n_users, n_items)
     print 'step4--calculate sparsity\telapse:', time.time() - t
-
-    # test5
-    # poster_path = './1.jpg'
-    # feature_vec = get_picfeature(poster_path)
-    # print type(feature_vec)
     
+    # step5----------read valid_imdbid
+    valid_movieid = read_validId()
 
+    # step6----------dnn_pmf
+    # reverse dictionary
+    iindex_2_iid = dict((value,key) for key,value in iid_2_iindex.iteritems())
+    # print iindex_2_iid[7257] #test
+    # print valid_movieid #test
+    print train_data_matrix
+    print test_data_matrix
+    # DNNPMF(train_data_matrix, iindex_2_iid)  
 
     # step5---------use vgg16 to extract the pic features
     # with open('./movie_ID_Jpg.txt', 'rb') as fopen:
@@ -470,16 +485,3 @@ if __name__ == "__main__":
     #         movie_id, movie_jpg = tempdata[0], tempdata[1]
             
     #         print str(movie_id), str(movie_jpg)
-
-    # step4-------------PMF
-    # MF_SGD = ExplicitMF(train_data_matrix, 40, learning = 'sgd', verbose = True)
-
-    # iter_array = [1, 2, 5, 10, 25]
-
-    # MF_SGD.calculate_learning_curve(iter_array, test_data_matrix, learning_rate=0.01)
-
-    # print(iter_array)
-    # print(MF_SGD.test_mse)
-    print train_data_matrix
-    # print train_data_matrix[2114]
-    # DNNPMF(train_data_matrix)
