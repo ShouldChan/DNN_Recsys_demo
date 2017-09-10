@@ -250,7 +250,7 @@ class vgg16:
 def read_dataset():
     # step1----------read dataset
     header = ['user_id', 'item_id', 'rating', 'timestamp']
-    df = pd.read_csv('./u.data', sep = '\t', names = header)
+    df = pd.read_csv('./v2_filter_user_ratedmovies.txt', sep = '\t', names = header)
 
     users = df.user_id.unique()
     items = df.item_id.unique()
@@ -258,8 +258,8 @@ def read_dataset():
     n_users = users.shape[0]
     n_items = items.shape[0]
 
-    # print type(users)
-    # print users
+    print type(users)
+    print users
     # print items
     print n_users, n_items
     return df, users, items, n_users, n_items
@@ -366,21 +366,13 @@ def DNNPMF(ratings, n_factors=40, learning_rate=0.01, _lambda_1=0.01, _lambda_2=
     print user_vecs.shape, item_vecs.shape
 
     # 4.get CNN vec of images 1*1000
-    # poster_path = './1.jpg'
+    poster_path = './1.jpg'
     # with open('./valid_movieid_imdbid.txt', 'rb') as fread:
-        # 
+        
     # cnn_vecs = get_picfeature(poster_path)
 
-    # print ((I_indicator*ratings).T).shape
-    # x=2*item_vecs.dot((I_indicator*ratings).T)
-    # print '2V(I`R).T:',x.shape
-
-    # y=2*item_vecs.dot((I_indicator*((user_vecs.T).dot(item_vecs))).T)
-    # print '2V(asdasd):',y.shape
-
-    # z=2*_lambda_1*user_vecs
-    # print '2lamdaU:',z.shape
     # 5.partial train sgd
+    b_vecs=np.random.rand(n_factors,n_items)
     n_iter = 30
     ctr = 1
     while ctr <= n_iter:
@@ -391,17 +383,17 @@ def DNNPMF(ratings, n_factors=40, learning_rate=0.01, _lambda_1=0.01, _lambda_2=
         # sgd(ratings, sample_row, sample_col, training_indices, user_vecs, item_vecs)
         # sgd
         # Update U
-        user_vecs+=user_vecs+learning_rate*(2*item_vecs.dot(I_indicator*ratings).T \
-            -2*item_vecs.dot(I_indicator*((user_vecs.T).dot(item_vecs))).T \
+        user_vecs+=learning_rate*(2*item_vecs.dot((I_indicator*ratings).T) \
+            -2*item_vecs.dot((I_indicator*((user_vecs.T).dot(item_vecs))).T) \
             -2*_lambda_1*user_vecs)
 
         # Update B
-        b_vecs=np.random.rand(n_factors,n_items)
+        
 
         #  Update V
-        item_vecs+=item_vecs+learning_rate*(2*user_vecs.dot(I_indicator*ratings) \
+        item_vecs+=learning_rate*(2*user_vecs.dot(I_indicator*ratings) \
             -2*user_vecs.dot(I_indicator*((user_vecs.T).dot(item_vecs))) \
-            -2*_lambda_1*user_vecs+alpha*b_vecs)
+            -2*_lambda_1*item_vecs+alpha*b_vecs)
 
         # Update Q
 
@@ -488,7 +480,6 @@ if __name__ == "__main__":
 
     # print(iter_array)
     # print(MF_SGD.test_mse)
-    print train_data_matrix.shape
+    print train_data_matrix
     # print train_data_matrix[2114]
-    train_data_matrix=np.random.rand(2113, 8887)
-    DNNPMF(train_data_matrix)
+    # DNNPMF(train_data_matrix)
