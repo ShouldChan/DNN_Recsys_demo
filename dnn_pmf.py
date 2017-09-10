@@ -371,14 +371,23 @@ def DNNPMF(ratings, n_factors=40, learning_rate=0.01, _lambda_1=0.01, _lambda_2=
         # 
     # cnn_vecs = get_picfeature(poster_path)
 
+    # print ((I_indicator*ratings).T).shape
+    # x=2*item_vecs.dot((I_indicator*ratings).T)
+    # print '2V(I`R).T:',x.shape
+
+    # y=2*item_vecs.dot((I_indicator*((user_vecs.T).dot(item_vecs))).T)
+    # print '2V(asdasd):',y.shape
+
+    # z=2*_lambda_1*user_vecs
+    # print '2lamdaU:',z.shape
     # 5.partial train sgd
     n_iter = 30
     ctr = 1
     while ctr <= n_iter:
         if ctr % 10 ==0:
             print 'current iteration:{}'.format(ctr)
-        training_indices = np.arange(n_samples)
-        np.random.shuffle(training_indices)
+        # training_indices = np.arange(n_samples)
+        # np.random.shuffle(training_indices)
         # sgd(ratings, sample_row, sample_col, training_indices, user_vecs, item_vecs)
         # sgd
         # Update U
@@ -395,7 +404,7 @@ def DNNPMF(ratings, n_factors=40, learning_rate=0.01, _lambda_1=0.01, _lambda_2=
             -2*_lambda_1*user_vecs+alpha*b_vecs)
 
         # Update Q
-        
+
         # for idx in training_indices:
         #     u = sample_row[idx]
         #     i = sample_col[idx]
