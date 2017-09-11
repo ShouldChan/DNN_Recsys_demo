@@ -317,7 +317,7 @@ def read_validId():
         for line in lines:
             temp = line.strip().split('\t')
             movieid, imdbid = temp[0], temp[1]
-            valid_movieid[movieid] = imdbid
+            valid_movieid[str(movieid)] = str(imdbid)
     return valid_movieid
 # mse
 def get_mse(pred, actual):
@@ -349,7 +349,8 @@ def get_picfeature(poster_path):
     return feature_vector
 
 # dnn+pmf
-def DNNPMF(ratings, iindex_2_iid, n_factors=40, learning_rate=0.01, _lambda_1=0.01, _lambda_2=0.01, alpha=0.01):
+import os
+def DNNPMF(ratings, iindex_2_iid, valid_movieid, n_factors=40, learning_rate=0.01, _lambda_1=0.01, _lambda_2=0.01, alpha=0.01):
     # ratings: ndarray
     # 1.define an indicator matrix I, I_ij = 1 if R_ij > 0 and 0 otherwise
     I_indicator = ratings
@@ -377,10 +378,25 @@ def DNNPMF(ratings, iindex_2_iid, n_factors=40, learning_rate=0.01, _lambda_1=0.
     print user_vecs.shape, item_vecs.shape
 
     # 4.get CNN vec of images 1*1000
-    # poster_path = './1.jpg'
+    base_frame_path = './movielens2011_frames/'
     
-    # for i in range(n_items):
-    #     print 
+    ferrlog = open('./error_log.txt', 'wb')
+    for i in range(n_items):
+         movieid = str(iindex_2_iid[i])
+         imdbid = str(valid_movieid[movieid])
+         print imdbid
+         frame_path = base_frame_path + imdbid + '/'
+         for root, dirs, files in os.walk(frame_path):
+            if len(files) == 0:
+                print '--------this folder is empty-------'
+                ferrlog.write(str(frame_path)+'\n')
+                continue
+            else:
+                for j in files:
+                    jpg_path = frame_path + str(j)
+                    print jpg_path
+                    # cnn_vecs
+
     # cnn_vecs = get_picfeature(poster_path)
 
     # 5.partial train sgd
@@ -473,11 +489,13 @@ if __name__ == "__main__":
     # step6----------dnn_pmf
     # reverse dictionary
     iindex_2_iid = dict((value,key) for key,value in iid_2_iindex.iteritems())
+    # print str(iindex_2_iid[3]) #test
+    # print valid_movieid[str(iindex_2_iid[3])] #test
     # print iindex_2_iid[7257] #test
     # print valid_movieid #test
     # print train_data_matrix #test
     # print test_data_matrix #test
-    DNNPMF(train_data_matrix, iindex_2_iid)  
+    DNNPMF(train_data_matrix, iindex_2_iid, valid_movieid)  
 
     # step5---------use vgg16 to extract the pic features
     # with open('./movie_ID_Jpg.txt', 'rb') as fopen:
