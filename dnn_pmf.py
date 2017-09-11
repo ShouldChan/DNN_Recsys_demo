@@ -319,6 +319,10 @@ def read_validId():
             movieid, imdbid = temp[0], temp[1]
             valid_movieid[str(movieid)] = str(imdbid)
     return valid_movieid
+
+# sigmoid
+def sigmoid(x):
+    return 1.0 / (1.0 + math.exp(-x))
 # mse
 def get_mse(pred, actual):
     # Ignore nonzero terms.
@@ -347,6 +351,31 @@ def get_picfeature(poster_path):
     # print feature_vector.ndim
     # print feature_vector
     return feature_vector
+
+# get cnn_vecs by path
+def get_cnn_vecs(frame_path):
+    ferrlog = open('./error_log.txt', 'a+')
+    n_imgs = 0
+    for root, dirs, files in os.walk(frame_path):
+        n_imgs = len(files)
+    # initialization
+    cnn_vecs = np.zeros((n_imgs,1000))
+    
+    for root, dirs, files in os.walk(frame_path):
+        if len(files) == 0:
+            print '--------this folder is empty-------'
+            ferrlog.write(str(frame_path)+'\n')
+            continue
+        else:
+            for i,j in zip(range(n_imgs),files):
+                jpg_path = frame_path + str(j)
+                # print jpg_path
+                print i
+                each_cnn = get_picfeature(jpg_path)
+                each_cnn = each_cnn.reshape(1,1000)
+                cnn_vecs[i] = each_cnn
+    ferrlog.close()
+    return n_imgs, cnn_vecs
 
 # dnn+pmf
 import os
@@ -380,24 +409,14 @@ def DNNPMF(ratings, iindex_2_iid, valid_movieid, n_factors=40, learning_rate=0.0
     # 4.get CNN vec of images 1*1000
     base_frame_path = './movielens2011_frames/'
     
-    ferrlog = open('./error_log.txt', 'wb')
+    # according to the path, getting the cnn_vecs of each movie
     for i in range(n_items):
          movieid = str(iindex_2_iid[i])
          imdbid = str(valid_movieid[movieid])
          print imdbid
          frame_path = base_frame_path + imdbid + '/'
-         for root, dirs, files in os.walk(frame_path):
-            if len(files) == 0:
-                print '--------this folder is empty-------'
-                ferrlog.write(str(frame_path)+'\n')
-                continue
-            else:
-                for j in files:
-                    jpg_path = frame_path + str(j)
-                    print jpg_path
-                    # cnn_vecs
-
-    # cnn_vecs = get_picfeature(poster_path)
+         n_imgs, cnn_vecs = get_cnn_vecs(frame_path)
+         
 
     # 5.partial train sgd
     b_vecs=np.random.rand(n_factors,n_items)
@@ -416,7 +435,23 @@ def DNNPMF(ratings, iindex_2_iid, valid_movieid, n_factors=40, learning_rate=0.0
             -2*_lambda_1*user_vecs)
 
         # Update B
-        
+
+        # according to the path, getting the cnn_vecs of each movie
+        # for i in range(n_items):
+        #      movieid = str(iindex_2_iid[i])
+        #      imdbid = str(valid_movieid[movieid])
+        #      print imdbid
+        #      frame_path = base_frame_path + imdbid + '/'
+        #      for root, dirs, files in os.walk(frame_path):
+        #         if len(files) == 0:
+        #             print '--------this folder is empty-------'
+        #             ferrlog.write(str(frame_path)+'\n')
+        #             continue
+        #         else:
+        #             for j in files:
+        #                 jpg_path = frame_path + str(j)
+        #                 # print jpg_path
+        #                 # cnn_vecs = get_picfeature(jpg_path)
 
         #  Update V
         item_vecs+=learning_rate*(2*user_vecs.dot(I_indicator*ratings) \
@@ -489,6 +524,10 @@ if __name__ == "__main__":
     # step6----------dnn_pmf
     # reverse dictionary
     iindex_2_iid = dict((value,key) for key,value in iid_2_iindex.iteritems())
+    # path='./1.jpg' #test
+    # cnn=get_picfeature(path)#test
+    # print type(cnn)#test
+    # print cnn.shape#test
     # print str(iindex_2_iid[3]) #test
     # print valid_movieid[str(iindex_2_iid[3])] #test
     # print iindex_2_iid[7257] #test
