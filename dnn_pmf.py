@@ -535,12 +535,3 @@ if __name__ == "__main__":
     # print train_data_matrix #test
     # print test_data_matrix #test
     DNNPMF(train_data_matrix, iindex_2_iid, valid_movieid)  
-
-    # step5---------use vgg16 to extract the pic features
-    # with open('./movie_ID_Jpg.txt', 'rb') as fopen:
-    #     lines = fopen.readlines()
-    #     for line in lines:
-    #         tempdata = line.strip().split('\t')
-    #         movie_id, movie_jpg = tempdata[0], tempdata[1]
-            
-    #         print str(movie_id), str(movie_jpg)
