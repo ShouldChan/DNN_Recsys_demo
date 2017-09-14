@@ -332,6 +332,43 @@ def get_mse(pred, actual):
 
 
 from scipy.misc import imread, imresize
+def save_all_picfeats(ratings,iindex_2_iid,valid_movieid):
+    ferrlog = open('./error_log.txt', 'a+')
+    n_users, n_items = ratings.shape
+    base_frame_path = './movielens2011_frames/'
+    base_feats_path = './movielens2011_cnnfeats/'
+    sess = tf.Session()
+    imgs = tf.placeholder(tf.float32, [None,224,224,3])
+    vgg = vgg16(imgs, './vgg16_weights.npz', sess)
+    for i in range(n_items):
+        movieid = str(iindex_2_iid[i])
+        imdbid = str(valid_movieid[movieid])
+        print imdbid
+        frame_path = base_frame_path + imdbid + '/'
+        feats_path = base_feats_path + imdbid +'/'
+        if not os.path.exists(feats_path):
+            os.makedirs(feats_path)
+        for root, dirs, files in os.walk(frame_path):
+            if len(files) == 0:
+                print '====empty===='
+                continue
+            else:
+                for i,j in zip(range(len(files)), files):
+                    jpg_path = frame_path + str(j)
+                    # print jpg_path
+                    s = str(j)
+                    ss = s.replace('jpg','npy')
+                    save_np_path = feats_path + str(ss)
+                    print save_np_path
+                    # get features
+                    img = imread(jpg_path, mode='RGB')
+                    img = imresize(img,(224,224))
+                    feature=sess.run(vgg.fc3l, feed_dict ={vgg.imgs: [img]})
+                    feature_vector=np.squeeze(feature)
+                    feature_vector=feature_vector.reshape(1,1000)
+                    np.save(save_np_path,feature_vector)
+    ferrlog.close()
+
 def get_picfeature(poster_path):
     # step5------------use vgg16
     sess = tf.Session()
@@ -524,6 +561,8 @@ if __name__ == "__main__":
     # step6----------dnn_pmf
     # reverse dictionary
     iindex_2_iid = dict((value,key) for key,value in iid_2_iindex.iteritems())
+
+    save_all_picfeats(train_data_matrix, iindex_2_iid, valid_movieid)
     # path='./1.jpg' #test
     # cnn=get_picfeature(path)#test
     # print type(cnn)#test
@@ -534,4 +573,4 @@ if __name__ == "__main__":
     # print valid_movieid #test
     # print train_data_matrix #test
     # print test_data_matrix #test
-    DNNPMF(train_data_matrix, iindex_2_iid, valid_movieid)  
+    # DNNPMF(train_data_matrix, iindex_2_iid, valid_movieid)  
