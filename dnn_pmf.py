@@ -510,9 +510,12 @@ def DNNPMF(ratings, iindex_2_iid, valid_movieid, n_factors=40, learning_rate=0.0
 
             y = float(0)
             for k in range(n_imgs_neg):
-                y+=1-sigmoid((-1*((item_vecs[:,i]).T).dot(q_vecs)).dot(cnn_vecs_neg[k]))
+                c = np.array([cnn_vecs_neg[k,:]])
+                y += 1-sigmoid(-1*a.dot(q_vecs).dot(c.T))
+                # y += 1-sigmoid((-1*((item_vecs[:,i]).T).dot(q_vecs)).dot(cnn_vecs_neg[k]))
 
-            present_two = y*item_vecs[:,i].dot((cnn_vecs_neg[k]).T)
+            present_two = y*((a.T).dot(c)) 
+            # present_two = y*item_vecs[:,i].dot((cnn_vecs_neg[k]).T)
             print present_two.shape
             present = present_one - present_two
 
