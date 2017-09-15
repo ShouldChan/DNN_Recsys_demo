@@ -494,23 +494,21 @@ def DNNPMF(ratings, iindex_2_iid, valid_movieid, n_factors=40, learning_rate=0.0
         for j in range(n_imgs):
             # 每张p_{v_j}^s都randomly产生r张negative sample作为反例
             # 选下一个电影的关键帧作为negative sample
-            # item_vecs[:,i] = item_vecs[:,i].reshape(40,1)
-            # cnn_vecs[j] = cnn_vecs[j].reshape(1,1000)
-            x = 1-sigmoid((((item_vecs[:,i]).T).dot(q_vecs)).dot(cnn_vecs[j,:]))
 
-            print item_vecs[:,i].shape
-            print cnn_vecs[j,:].shape
+            # print item_vecs[:,i].shape
+            # print cnn_vecs[j,:].shape
             a=np.array([item_vecs[:,i]])
-            a=a.T
             b=np.array([cnn_vecs[j,:]])
-            print a.shape
-            print b.shape
-            present_one = x*(a.dot(b))
+            # print a.shape
+            # print b.shape
+            x = 1-sigmoid((a.dot(q_vecs)).dot(b.T))
+            # x = 1-sigmoid((((item_vecs[:,i]).T).dot(q_vecs)).dot(cnn_vecs[j,:]))
+
+            present_one = x*((a.T).dot(b))
             # present_one=x*((item_vecs[:,i]).dot((cnn_vecs[j,:]).T))
             print present_one.shape
 
-            present_two = None
-            y = None
+            y = float(0)
             for k in range(n_imgs_neg):
                 y+=1-sigmoid((-1*((item_vecs[:,i]).T).dot(q_vecs)).dot(cnn_vecs_neg[k]))
 
