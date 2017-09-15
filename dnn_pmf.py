@@ -390,6 +390,7 @@ def get_picfeature(poster_path):
     return feature_vector
 
 # get cnn_vecs by path
+'''
 def get_cnn_vecs(frame_path):
     ferrlog = open('./error_log.txt', 'a+')
     n_imgs = 0
@@ -413,6 +414,23 @@ def get_cnn_vecs(frame_path):
                 cnn_vecs[i] = each_cnn
     ferrlog.close()
     return n_imgs, cnn_vecs
+'''
+
+# get one movie's imgs's cnn_vecs
+def get_eachmovie_cnnfeats(base_feat_path):
+    n_imgs = 0
+    for root, dirs, files in os.walk(base_feat_path):
+        n_imgs = len(files)
+    # initialize the cnn_vecs
+    cnn_vecs = np.zeros((n_imgs,1000))
+    for root,dirs,files in os.walk(base_feat_path):
+        for i,j in zip(range(n_imgs),files):
+            feat_path = base_feat_path+str(j)
+            print feat_path
+            each_cnn = np.load(feat_path)
+            print each_cnn.shape
+            cnn_vecs[i] = each_cnn
+    return n_imgs,cnn_vecs
 
 # dnn+pmf
 import os
@@ -444,17 +462,31 @@ def DNNPMF(ratings, iindex_2_iid, valid_movieid, n_factors=40, learning_rate=0.0
     print user_vecs.shape, item_vecs.shape
 
     # 4.get CNN vec of images 1*1000
-    base_frame_path = './movielens2011_frames/'
+    t=time.time()
+    base_path = './movielens2011_cnnfeats/'
     
+    q_vecs=np.random.rand((n_factors,1000))
     # according to the path, getting the cnn_vecs of each movie
     for i in range(n_items):
-         movieid = str(iindex_2_iid[i])
-         imdbid = str(valid_movieid[movieid])
-         print imdbid
-         frame_path = base_frame_path + imdbid + '/'
-         n_imgs, cnn_vecs = get_cnn_vecs(frame_path)
-         
+        movieid=str(iindex_2_iid[i])
+        imdbid=str(valid_movieid[movieid])
+        print imdbid
+        base_feat_path = base_path+imdbid+'/'
+        n_imgs,cnn_vecs=get_eachmovie_cnnfeats(base_feat_path)
 
+        # Update Q
+        for j in range(n_imgs):
+            if j != (n_imgs-1):
+                    x=1-sigmoid((((item_vecs[:,i]).T).dot(q_vecs)).dot(cnn_vecs[j]))
+                    present_one=x*item_vecs[:,i].dot((cnn_vecs[j]).T) 
+                    print present_one.shape
+
+                    y=1-sigmoid((-1*((item_vecs[:,i]).T).dot(q_vecs)).dot(cnn_vecs[j]))
+                    present_two=y*item_vecs[:,i].dot((cnn_vecs[j]).T)
+                    print present_two.shape
+
+
+    print 'elapsed:\t',time.time()-t
     # 5.partial train sgd
     b_vecs=np.random.rand(n_factors,n_items)
     n_iter = 30
@@ -471,55 +503,18 @@ def DNNPMF(ratings, iindex_2_iid, valid_movieid, n_factors=40, learning_rate=0.0
             -2*item_vecs.dot((I_indicator*((user_vecs.T).dot(item_vecs))).T) \
             -2*_lambda_1*user_vecs)
 
+        # Update Q
+        # for i in range(n_items):
+        #     movieid=str(iindex_2_iid[i])
+        #     imdbid = str(valid_movieid[movieid])
+            
         # Update B
 
-        # according to the path, getting the cnn_vecs of each movie
-        # for i in range(n_items):
-        #      movieid = str(iindex_2_iid[i])
-        #      imdbid = str(valid_movieid[movieid])
-        #      print imdbid
-        #      frame_path = base_frame_path + imdbid + '/'
-        #      for root, dirs, files in os.walk(frame_path):
-        #         if len(files) == 0:
-        #             print '--------this folder is empty-------'
-        #             ferrlog.write(str(frame_path)+'\n')
-        #             continue
-        #         else:
-        #             for j in files:
-        #                 jpg_path = frame_path + str(j)
-        #                 # print jpg_path
-        #                 # cnn_vecs = get_picfeature(jpg_path)
 
         #  Update V
         item_vecs+=learning_rate*(2*user_vecs.dot(I_indicator*ratings) \
             -2*user_vecs.dot(I_indicator*((user_vecs.T).dot(item_vecs))) \
             -2*_lambda_1*item_vecs+alpha*b_vecs)
-
-        # Update Q
-
-        # for idx in training_indices:
-        #     u = sample_row[idx]
-        #     i = sample_col[idx]
-        #     # print u,i
-        #     prediction = predict(user_vecs, item_vecs, u, i)
-        #     error = (ratings[u, i] - prediction)
-        #     # Update U
-        #     # I_indicator = user_vecs[:, u]
-        #     # I_indicator[I_indicator>0] = 1
-        #     # I_indicator[I_indicator<=0] = 0
-        #     # user_vecs[:, u] += - 2 * (item_vecs[:, i].dot((user_vecs[:, u].T * item_vecs[:, i])).T)
-        #     user_vecs[:, u] += learning_rate * (2 * item_vecs[:, i].dot(I_indicator * ratings).T) \
-        #      - 2 * (item_vecs[:, i].dot(I_indicator * (user_vecs[:, u].T * item_vecs[:, i])).T) \
-        #      - 2 * _lambda_1 * user_vecs[:, u]
-        #     # Update V
-        #     # item_vecs[:, i] += -2*_lambda_1*item_vecs[:, i]
-        #     item_vecs[:, i] += learning_rate * (2 * user_vecs[:, u].dot(I_indicator * ratings).T) \
-        #      - 2 * (user_vecs[:, u]).dot(I_indicator * (user_vecs[:, u].T * item_vecs[:, i])) \
-        #      - 2 * _lambda_1 * item_vecs[:, i] + alpha * b_vecs
-
-        #     # Update b_vecs k*m
-        #     b_vecs = np.random.rand(n_factors, n_items)
-        #     # Update Q
 
         ctr += 1
 
@@ -558,11 +553,12 @@ if __name__ == "__main__":
     # step5----------read valid_imdbid
     valid_movieid = read_validId()
 
-    # step6----------dnn_pmf
     # reverse dictionary
     iindex_2_iid = dict((value,key) for key,value in iid_2_iindex.iteritems())
 
-    save_all_picfeats(train_data_matrix, iindex_2_iid, valid_movieid)
+    # step6-----------save feats
+    # save_all_picfeats(train_data_matrix, iindex_2_iid, valid_movieid)
+   
     # path='./1.jpg' #test
     # cnn=get_picfeature(path)#test
     # print type(cnn)#test
@@ -573,4 +569,7 @@ if __name__ == "__main__":
     # print valid_movieid #test
     # print train_data_matrix #test
     # print test_data_matrix #test
-    # DNNPMF(train_data_matrix, iindex_2_iid, valid_movieid)  
+
+    # step6----------dnn_pmf
+
+    DNNPMF(train_data_matrix, iindex_2_iid, valid_movieid)  
