@@ -462,18 +462,18 @@ def DNNPMF(ratings, iindex_2_iid, valid_movieid, n_factors=40, learning_rate=0.0
     # (2113, 40) (8887, 40)
     print user_vecs.shape, item_vecs.shape
 
-    # 4.get CNN vec of images 1*1000
-    t=time.time()
+
+    # 5.partial train sgd------during this, [get CNN vec of images 1*1000]
+    t = time.time()
     base_path = './movielens2011_cnnfeats/'
     
     q_vecs=np.random.rand(n_factors,1000)
-    # according to the path, getting the cnn_vecs of each movie
 
-    # Update Q
+    # Update Q & B
     for i in range(n_items):
         # 正例
-        movieid=str(iindex_2_iid[i])
-        imdbid=str(valid_movieid[movieid])
+        movieid = str(iindex_2_iid[i])
+        imdbid = str(valid_movieid[movieid])
         # 反例
         if i != (n_items-1): 
             movieid_neg=str(iindex_2_iid[i+1])
@@ -483,49 +483,94 @@ def DNNPMF(ratings, iindex_2_iid, valid_movieid, n_factors=40, learning_rate=0.0
             imdbid_neg=str(valid_movieid[movieid_neg])
         print imdbid
 
-        base_feat_path = base_path+imdbid+'/'
-        base_feat_path_neg = base_path+imdbid_neg+'/'
+        base_feat_path = base_path + imdbid + '/'
+        base_feat_path_neg = base_path + imdbid_neg + '/'
 
-        n_imgs, cnn_vecs=get_eachmovie_cnnfeats(base_feat_path)
-        n_imgs_neg, cnn_vecs_neg=get_eachmovie_cnnfeats(base_feat_path_neg)
+        # according to the path, getting the cnn_vecs of each movie
+        n_imgs, cnn_vecs = get_eachmovie_cnnfeats(base_feat_path)
+        n_imgs_neg, cnn_vecs_neg = get_eachmovie_cnnfeats(base_feat_path_neg)
 
         
-        present = None
+        q_present = None
         for j in range(n_imgs):
             # 每张p_{v_j}^s都randomly产生r张negative sample作为反例
             # 选下一个电影的关键帧作为negative sample
 
             # print item_vecs[:,i].shape
             # print cnn_vecs[j,:].shape
-            a=np.array([item_vecs[:,i]])
-            b=np.array([cnn_vecs[j,:]])
-            # print a.shape
-            # print b.shape
-            x = 1-sigmoid((a.dot(q_vecs)).dot(b.T))
+            qa=np.array([item_vecs[:,i]])
+            qb=np.array([cnn_vecs[j,:]])
+            # print qa.shape
+            # print qb.shape
+            qx = 1-sigmoid((qa.dot(q_vecs)).dot(qb.T))
             # x = 1-sigmoid((((item_vecs[:,i]).T).dot(q_vecs)).dot(cnn_vecs[j,:]))
 
-            present_one = x*((a.T).dot(b))
+            q_present_one = qx*((qa.T).dot(qb))
             # present_one=x*((item_vecs[:,i]).dot((cnn_vecs[j,:]).T))
-            print present_one.shape
+            # print present_one.shape
+            # type(qx): float
+            # type(q_present_one): ndarray
 
-            y = float(0)
+            qy = float(0)
+            q_present_two = np.zeros((n_factors,1000))
             for k in range(n_imgs_neg):
-                c = np.array([cnn_vecs_neg[k,:]])
-                y += 1-sigmoid(-1*a.dot(q_vecs).dot(c.T))
+                qc = np.array([cnn_vecs_neg[k,:]])
+                qy += 1-sigmoid(-1*qa.dot(q_vecs).dot(qc.T))
                 # y += 1-sigmoid((-1*((item_vecs[:,i]).T).dot(q_vecs)).dot(cnn_vecs_neg[k]))
 
-            present_two = y*((a.T).dot(c)) 
+                q_present_two += qy*((qa.T).dot(qc)) 
             # present_two = y*item_vecs[:,i].dot((cnn_vecs_neg[k]).T)
-            print present_two.shape
-            present = present_one - present_two
+            # print present_two.shape
+            q_present = q_present_one - q_present_two
 
-        present += present
-    q_vecs += alpha * present - 2 * _lambda_2 * q_vecs
+        q_present += q_present
+    q_vecs += alpha * q_present - 2 * _lambda_2 * q_vecs
+
+    print 'Training Q elapsed:\t',time.time()-t
+
+    # Update B
+    # t = time.time()
+    # b_vecs = np.random.rand(n_factors,n_items)
+
+    # for i in range(n_items):
+    #     # 正例
+    #     movieid = str(iindex_2_iid[i])
+    #     imdbid = str(valid_movieid[movieid])
+
+    #     # 反例
+    #     if i != (n_items-1):
+    #         movieid_neg = str(iindex_2_iid[i+1])
+    #         imdbid_neg = str(valid_movieid[movieid_neg])
+    #     else:
+    #         movieid_neg = str(iindex_2_iid[i-1])
+    #         imdbid_neg = str(valid_movieid[movieid_neg])
+    #     print imdbid
+
+    #     base_feat_path = base_path + imdbid + '/'
+    #     base_feat_path_neg = base_path + imdbid_neg + '/'
+
+    #     n_imgs, cnn_vecs = get_eachmovie_cnnfeats(base_feat_path)
+    #     n_imgs_neg, cnn_vecs_neg = get_eachmovie_cnnfeats(base_feat_path_neg)
+
+    #     b_present = None
+    #     for j in range(n_imgs):
+    #         ba = np.array([item_vecs[:,i]])
+    #         bb = np.array([cnn_vecs[j,:]])
+    #         print ba.shape
+    #         print bb.shape
+    #         bx = 1-sigmoid((ba.dot(q_vecs)).dot(bb.T))
+
+    #         b_present_one = bx*(q_vecs.dot(bb.T))
+
+    #         by = float(0)
+    #         for k in range(n_imgs_neg):
+    #             bc = np.array([cnn_vecs_neg[k,:]])
+    #             by += 1-sigmoid(-1*ba.dot(q_vecs).dot(bc.T))
 
 
-    print 'elapsed:\t',time.time()-t
-    # 5.partial train sgd
-    b_vecs=np.random.rand(n_factors,n_items)
+    
+    # print 'Training B elapsed:\t',time.time()-t
+    
     n_iter = 30
     ctr = 1
     while ctr <= n_iter:
@@ -539,8 +584,6 @@ def DNNPMF(ratings, iindex_2_iid, valid_movieid, n_factors=40, learning_rate=0.0
         user_vecs+=learning_rate*(2*item_vecs.dot((I_indicator*ratings).T) \
             -2*item_vecs.dot((I_indicator*((user_vecs.T).dot(item_vecs))).T) \
             -2*_lambda_1*user_vecs)
-   
-        # Update B
 
 
         #  Update V
