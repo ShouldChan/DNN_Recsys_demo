@@ -470,113 +470,119 @@ def DNNPMF(ratings, iindex_2_iid, valid_movieid, n_factors=40, learning_rate=0.0
     q_vecs=np.random.normal(scale=1./n_factors, size=(n_factors, 1000))
 
     q_present=np.zeros((n_factors,1000))
-    # Update Q & B
-    for i in range(n_items):
-        # 正例
-        movieid = str(iindex_2_iid[i])
-        imdbid = str(valid_movieid[movieid])
-        # 反例
-        if i != (n_items-1): 
-            movieid_neg=str(iindex_2_iid[i+1])
-            imdbid_neg=str(valid_movieid[movieid_neg])
-        else:
-            movieid_neg=str(iindex_2_iid[i-1])
-            imdbid_neg=str(valid_movieid[movieid_neg])
-        print imdbid
-
-        base_feat_path = base_path + imdbid + '/'
-        base_feat_path_neg = base_path + imdbid_neg + '/'
-
-        # according to the path, getting the cnn_vecs of each movie
-        n_imgs, cnn_vecs = get_eachmovie_cnnfeats(base_feat_path)
-        n_imgs_neg, cnn_vecs_neg = get_eachmovie_cnnfeats(base_feat_path_neg)
-
-        q_present_eachimg=np.zeros((n_factors,1000))
-        for j in range(n_imgs):
-            # 每张p_{v_j}^s都randomly产生r张negative sample作为反例
-            # 选下一个电影的关键帧作为negative sample
-
-            # print item_vecs[:,i].shape
-            # print cnn_vecs[j,:].shape
-            qa=np.array([item_vecs[:,i]])
-            qb=np.array([cnn_vecs[j,:]])
-            # print qa.shape
-            # print qb.shape
-            qx = 1-sigmoid((qa.dot(q_vecs)).dot(qb.T))
-            # x = 1-sigmoid((((item_vecs[:,i]).T).dot(q_vecs)).dot(cnn_vecs[j,:]))
-
-            q_present_one = qx*((qa.T).dot(qb))
-            # present_one=x*((item_vecs[:,i]).dot((cnn_vecs[j,:]).T))
-            # print present_one.shape
-            # type(qx): float
-            # type(q_present_one): ndarray
-
-            # qy = float(0)
-            q_present_two = np.zeros((n_factors,1000))
-            for k in range(n_imgs_neg):
-                qc = np.array([cnn_vecs_neg[k,:]])
-                qy = 1-sigmoid(-1*qa.dot(q_vecs).dot(qc.T))
-                # y += 1-sigmoid((-1*((item_vecs[:,i]).T).dot(q_vecs)).dot(cnn_vecs_neg[k]))
-
-                q_present_two += qy*((qa.T).dot(qc)) 
-            # present_two = y*item_vecs[:,i].dot((cnn_vecs_neg[k]).T)
-            # print present_two.shape
-            # 得到一张图片和它的反例的特征表达式
-            q_present_eachimg += q_present_one - q_present_two
-            # 叠加得出一部电影的所有图片和反例的特征表达式
-        # 得到所有电影和它的反例的特征表达式
-        q_present += q_present_eachimg
-
-    q_vecs += learning_rate*(alpha * q_present - 2 * _lambda_2 * q_vecs)
-    print 'Training Q elapsed:\t',time.time()-t
-
-    # Update B
-    # t = time.time()
-    # b_vecs = np.zeros((n_factors,n_items))
-    # # print b_vecs.shape #(40*m)
+    # # Update Q & B
     # for i in range(n_items):
     #     # 正例
     #     movieid = str(iindex_2_iid[i])
     #     imdbid = str(valid_movieid[movieid])
-
     #     # 反例
-    #     if i != (n_items-1):
-    #         movieid_neg = str(iindex_2_iid[i+1])
-    #         imdbid_neg = str(valid_movieid[movieid_neg])
+    #     if i != (n_items-1): 
+    #         movieid_neg=str(iindex_2_iid[i+1])
+    #         imdbid_neg=str(valid_movieid[movieid_neg])
     #     else:
-    #         movieid_neg = str(iindex_2_iid[i-1])
-    #         imdbid_neg = str(valid_movieid[movieid_neg])
+    #         movieid_neg=str(iindex_2_iid[i-1])
+    #         imdbid_neg=str(valid_movieid[movieid_neg])
     #     print imdbid
 
     #     base_feat_path = base_path + imdbid + '/'
     #     base_feat_path_neg = base_path + imdbid_neg + '/'
 
+    #     # according to the path, getting the cnn_vecs of each movie
     #     n_imgs, cnn_vecs = get_eachmovie_cnnfeats(base_feat_path)
     #     n_imgs_neg, cnn_vecs_neg = get_eachmovie_cnnfeats(base_feat_path_neg)
 
-    #     b_present = np.zeros((n_factors,1))
+    #     q_present_eachimg=np.zeros((n_factors,1000))
     #     for j in range(n_imgs):
-    #         ba = np.array([item_vecs[:,i]])
-    #         bb = np.array([cnn_vecs[j,:]])
-    #         # print ba.shape
-    #         # print bb.shape
-    #         bx = 1-sigmoid((ba.dot(q_vecs)).dot(bb.T))
+    #         # 每张p_{v_j}^s都randomly产生r张negative sample作为反例
+    #         # 选下一个电影的关键帧作为negative sample
 
-    #         b_present_one = bx*(q_vecs.dot(bb.T))
+    #         # print item_vecs[:,i].shape
+    #         # print cnn_vecs[j,:].shape
+    #         qa=np.array([item_vecs[:,i]])
+    #         qb=np.array([cnn_vecs[j,:]])
+    #         # print qa.shape
+    #         # print qb.shape
+    #         qx = 1-sigmoid((qa.dot(q_vecs)).dot(qb.T))
+    #         # x = 1-sigmoid((((item_vecs[:,i]).T).dot(q_vecs)).dot(cnn_vecs[j,:]))
 
-    #         by = float(0)
-    #         b_present_two = np.zeros((n_factors,1))
+    #         q_present_one = qx*((qa.T).dot(qb))
+    #         # present_one=x*((item_vecs[:,i]).dot((cnn_vecs[j,:]).T))
+    #         # print present_one.shape
+    #         # type(qx): float
+    #         # type(q_present_one): ndarray
+
+    #         # qy = float(0)
+    #         q_present_two = np.zeros((n_factors,1000))
     #         for k in range(n_imgs_neg):
-    #             bc = np.array([cnn_vecs_neg[k,:]])
-    #             by += 1-sigmoid(-1*ba.dot(q_vecs).dot(bc.T))
+    #             qc = np.array([cnn_vecs_neg[k,:]])
+    #             qy = 1-sigmoid(-1*qa.dot(q_vecs).dot(qc.T))
+    #             # y += 1-sigmoid((-1*((item_vecs[:,i]).T).dot(q_vecs)).dot(cnn_vecs_neg[k]))
 
-    #             b_present_two += by*(q_vecs.dot(bc.T))
+    #             q_present_two += qy*((qa.T).dot(qc)) 
+    #         # present_two = y*item_vecs[:,i].dot((cnn_vecs_neg[k]).T)
+    #         # print present_two.shape
+    #         # 得到一张图片和它的反例的特征表达式
+    #         q_present_eachimg += q_present_one - q_present_two
+    #         # 叠加得出一部电影的所有图片和反例的特征表达式
+    #     # 得到所有电影和它的反例的特征表达式
+    #     q_present += q_present_eachimg
 
-    #         b_present += b_present_one - b_present_two
-    #         # print b_present.shape  #(40*1)
-    #     b_present.reshape(40,)
-    #     print b_vecs[:,i].shape
-    #     b_vecs[:,i] = b_present
+    # q_vecs += learning_rate*(alpha * q_present - 2 * _lambda_2 * q_vecs)
+    # print 'Training Q elapsed:\t',time.time()-t
+
+    # Update B
+    t = time.time()
+    b_vecs = np.zeros((n_factors,n_items))
+    print b_vecs.shape #(40*m)
+    for i in range(n_items):
+        # 正例
+        movieid = str(iindex_2_iid[i])
+        imdbid = str(valid_movieid[movieid])
+
+        # 反例
+        if i != (n_items-1):
+            movieid_neg = str(iindex_2_iid[i+1])
+            imdbid_neg = str(valid_movieid[movieid_neg])
+        else:
+            movieid_neg = str(iindex_2_iid[i-1])
+            imdbid_neg = str(valid_movieid[movieid_neg])
+        print imdbid
+
+        base_feat_path = base_path + imdbid + '/'
+        base_feat_path_neg = base_path + imdbid_neg + '/'
+
+        n_imgs, cnn_vecs = get_eachmovie_cnnfeats(base_feat_path)
+        n_imgs_neg, cnn_vecs_neg = get_eachmovie_cnnfeats(base_feat_path_neg)
+
+        b_present = np.zeros((n_factors,1))
+        for j in range(n_imgs):
+            ba = np.array([item_vecs[:,i]])
+            bb = np.array([cnn_vecs[j,:]])
+            # print ba.shape
+            # print bb.shape
+            bx = 1-sigmoid((ba.dot(q_vecs)).dot(bb.T))
+
+            b_present_one = bx*(q_vecs.dot(bb.T))
+
+            by = float(0)
+            b_present_two = np.zeros((n_factors,1))
+            for k in range(n_imgs_neg):
+                bc = np.array([cnn_vecs_neg[k,:]])
+                by += 1-sigmoid(-1*ba.dot(q_vecs).dot(bc.T))
+
+                b_present_two += by*(q_vecs.dot(bc.T))
+
+            b_present += b_present_one - b_present_two
+            # print b_present.shape  #(40*1)
+        # 由于ndarray矩阵不能直接列赋值 所以用其转置矩阵进行行赋值
+        # print b_present.shape  #(40*1)
+        # print b_vecs.shape #(40*m)
+        b_vecs_T = b_vecs.T
+        # print b_vecs_T.shape   #(m*40)
+        # print b_present.T.shape  #(1*40)
+        b_vecs_T[i] = b_present.T
+    b_vecs = b_vecs_T.T
+
         
 
 
