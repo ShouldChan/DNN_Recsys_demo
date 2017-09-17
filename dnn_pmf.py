@@ -323,7 +323,14 @@ def read_validId():
 
 # sigmoid
 def sigmoid(x):
-    return 1.0 / (1.0 + math.exp(-x))
+    # Numerically-stable sigmoid function
+    if x >= 0:
+        z = math.exp(-x)
+        return 1.0 / (1.0 + z)
+    else:
+        z = math.exp(x)
+        return z / (1.0 + z)
+
 # mse
 def get_mse(pred, actual):
     # Ignore nonzero terms.
@@ -556,7 +563,7 @@ def DNNPMF(ratings, iindex_2_iid, valid_movieid, n_factors=40, learning_rate=0.0
             else:
                 movieid_neg = str(iindex_2_iid[i-1])
                 imdbid_neg = str(valid_movieid[movieid_neg])
-            print imdbid
+            # print imdbid
 
             base_feat_path = base_path + imdbid + '/'
             base_feat_path_neg = base_path + imdbid_neg + '/'
@@ -606,7 +613,7 @@ def DNNPMF(ratings, iindex_2_iid, valid_movieid, n_factors=40, learning_rate=0.0
             -2*user_vecs.dot(I_indicator*((user_vecs.T).dot(item_vecs))) \
             -2*_lambda_1*item_vecs+alpha*b_vecs)
         print 'Training V elapsed:\t',time.time()-t
-        
+
         ctr += 1
 
 # sgd predict
