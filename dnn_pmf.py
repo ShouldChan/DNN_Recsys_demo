@@ -615,6 +615,9 @@ def DNNPMF(ratings, iindex_2_iid, valid_movieid, n_factors=40, learning_rate=0.0
         print 'Training V elapsed:\t',time.time()-t
 
         ctr += 1
+    np.save('./U.npy',user_vecs)
+    np.save('./V.npy',item_vecs)
+    print 'save ok...'
 
 # sgd predict
 def predict(user_vecs, item_vecs, u, i):
