@@ -621,15 +621,21 @@ def DNNPMF(ratings, iindex_2_iid, valid_movieid, n_factors=40, learning_rate=0.0
 
 # sgd predict
 def predict(user_vecs, item_vecs, u, i):
-    return user_vecs[:, u].dot(item_vecs[:, i].T)
+    return (user_vecs[:, u].T).dot(item_vecs[:, i])
 
 # predict ratings for every user and item
-def predict_all(user_vecs, item_vecs):
-    predictions = np.zeros((user_vecs.shape[0], item_vecs.shape[0]))
-    for u in range(user_vecs.shape[0]):
-        for i in range(item_vecs.shape[0]):
-            predictions[u, i] = predict(user_vecs, item_vecs, u, i)
+def predict_all():
+    user_vecs = np.load('./U.npy')
+    print user_vecs.shape[1]
+    item_vecs = np.load('./V.npy')
+    print item_vecs.shape[1]
 
+    predictions = np.zeros((user_vecs.shape[1], item_vecs.shape[1]))
+    for u in range(user_vecs.shape[1]):
+        print u
+        for i in range(item_vecs.shape[1]):
+            predictions[u, i] = predict(user_vecs, item_vecs, u, i)
+    np.save('./precitions.npy', predictions)
     return predictions
 
 if __name__ == "__main__":
@@ -671,6 +677,8 @@ if __name__ == "__main__":
     # print train_data_matrix #test
     # print test_data_matrix #test
 
-    # step6----------dnn_pmf
+    # step7----------dnn_pmf
+    # DNNPMF(train_data_matrix, iindex_2_iid, valid_movieid)  
 
-    DNNPMF(train_data_matrix, iindex_2_iid, valid_movieid)  
+    # step8----------predict
+    predictions = predict_all()
