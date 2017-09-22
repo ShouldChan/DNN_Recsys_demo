@@ -442,7 +442,7 @@ def get_eachmovie_cnnfeats(base_feat_path):
 
 # dnn+pmf
 import os
-def DNNPMF(ratings, iindex_2_iid, valid_movieid, n_factors=40, learning_rate=0.01, _lambda_1=0.01, _lambda_2=0.01, alpha=0.01):
+def DNNPMF(ratings, test_data_matrix, iindex_2_iid, valid_movieid, n_factors=40, learning_rate=0.01, _lambda_1=1, _lambda_2=1, alpha=0.001):
     # ratings: ndarray
     # 1.define an indicator matrix I, I_ij = 1 if R_ij > 0 and 0 otherwise
     I_indicator = ratings
@@ -481,7 +481,7 @@ def DNNPMF(ratings, iindex_2_iid, valid_movieid, n_factors=40, learning_rate=0.0
     b_vecs = np.zeros((n_factors,n_items))
     # print b_vecs.shape #(40*m)
 
-    n_iter = 30
+    n_iter = 1
     ctr = 1
     while ctr <= n_iter:
         if ctr % 10 ==0:
@@ -612,31 +612,56 @@ def DNNPMF(ratings, iindex_2_iid, valid_movieid, n_factors=40, learning_rate=0.0
         item_vecs+=learning_rate*(2*user_vecs.dot(I_indicator*ratings) \
             -2*user_vecs.dot(I_indicator*((user_vecs.T).dot(item_vecs))) \
             -2*_lambda_1*item_vecs+alpha*b_vecs)
-        print 'Training V elapsed:\t',time.time()-t
 
+        print 'Training V elapsed:\t',time.time()-t
+        predictions = train_predict(user_vecs, item_vecs)
+        train_rmse += [rmse(predictions, ratings)]
+        test_rmse += [rmse(predictions, test_data_matrix)]
         ctr += 1
-    np.save('./U.npy',user_vecs)
-    np.save('./V.npy',item_vecs)
+        print 'Iteration:\t' + str(ctr)
+        # 输出最后一个
+        print 'Train rmse:\t' + str(train_rmse[-1])
+        print 'Test rmse"\t' + str(test_rmse[-1])
+
+    np.save('./U.npy', user_vecs)
+    np.save('./V.npy', item_vecs)
     print 'save ok...'
 
 # sgd predict
+def train_predict(user_vecs, item_vecs):
+    predictions = np.zeros((user_vecs.shape[1], item_vecs.shape[1]))
+    for u in range(user_vecs.shape[1]):
+        print u
+        for i in range(item_vecs.shape[1]):
+            predictions[u, i] = predict(user_vecs, item_vecs, u, i)
+    return predictions
+
 def predict(user_vecs, item_vecs, u, i):
     return (user_vecs[:, u].T).dot(item_vecs[:, i])
 
 # predict ratings for every user and item
 def predict_all():
     user_vecs = np.load('./U.npy')
-    print user_vecs.shape[1]
+    print user_vecs
     item_vecs = np.load('./V.npy')
-    print item_vecs.shape[1]
+    print item_vecs
 
     predictions = np.zeros((user_vecs.shape[1], item_vecs.shape[1]))
     for u in range(user_vecs.shape[1]):
         print u
         for i in range(item_vecs.shape[1]):
             predictions[u, i] = predict(user_vecs, item_vecs, u, i)
-    np.save('./precitions.npy', predictions)
+    np.save('./predictions.npy', predictions)
     return predictions
+
+from sklearn.metrics import mean_squared_error
+from math import sqrt
+
+def rmse(prediction, ground_truth):
+    # ignore nonzero terms
+    prediction = prediction[ground_truth.nonzero()].flatten()
+    ground_truth = ground_truth[ground_truth.nonzero()].flatten()
+    return sqrt(mean_squared_error(prediction, ground_truth))
 
 if __name__ == "__main__":
     # step1-------read dataset
@@ -678,7 +703,12 @@ if __name__ == "__main__":
     # print test_data_matrix #test
 
     # step7----------dnn_pmf
-    # DNNPMF(train_data_matrix, iindex_2_iid, valid_movieid)  
+    DNNPMF(train_data_matrix, test_data_matrix, iindex_2_iid, valid_movieid)  
 
     # step8----------predict
     predictions = predict_all()
+
+    # step9----------calc RMSE
+    # predictions = np.load('./predictions.npy')
+    # print predictions[55,4532]
+    # print 'RMSE:'+ str(rmse(predictions, test_data_matrix))
