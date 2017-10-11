@@ -442,7 +442,7 @@ def get_eachmovie_cnnfeats(base_feat_path):
 
 # dnn+pmf
 import os
-def DNNPMF(ratings, test_data_matrix, iindex_2_iid, valid_movieid, n_factors=40, learning_rate=0.01, _lambda_1=1, _lambda_2=1, alpha=0.001):
+def DNNPMF(ratings, test_data_matrix, iindex_2_iid, valid_movieid, n_factors=10, learning_rate=0.001, _lambda_1=1, _lambda_2=1, alpha=0.0001):
     # ratings: ndarray
     # 1.define an indicator matrix I, I_ij = 1 if R_ij > 0 and 0 otherwise
     I_indicator = ratings
@@ -481,7 +481,10 @@ def DNNPMF(ratings, test_data_matrix, iindex_2_iid, valid_movieid, n_factors=40,
     b_vecs = np.zeros((n_factors,n_items))
     # print b_vecs.shape #(40*m)
 
-    n_iter = 1
+    train_rmse = []
+    test_rmse = []
+
+    n_iter = 500
     ctr = 1
     while ctr <= n_iter:
         if ctr % 10 ==0:
@@ -627,11 +630,104 @@ def DNNPMF(ratings, test_data_matrix, iindex_2_iid, valid_movieid, n_factors=40,
     np.save('./V.npy', item_vecs)
     print 'save ok...'
 
+def get_criteria(test):
+    predictions = predict_all()
+    fwrite = open('./dnnpmf_criteria.txt','a+')
+    topk = [5,10,15,20]
+    for K in topk:
+        print 'top %d\t'%K
+        MAP = mean_average_precision(predictions,test,K)
+        print MAP
+        precision, recall, f_score = pre_rec_f1(predictions,test,K)
+        print precision, recall, f_score
+        ndcg = getNDCG(predictions,test,K)
+        print ndcg
+        fwrite.write('top'+str(K)+'\tpre: '+ \
+            str(precision)+'\trec: '+str(recall)+ \
+            '\tf1: '+str(f_score)+'\tndcg: '+ \
+            str(ndcg)+'\tmap: '+str(MAP)+'\n')
+    fwrite.close()
+
+def mean_average_precision(predictions,test,K):
+    n_users,n_items = predictions.shape
+    index_predictions = np.argsort(-predictions)
+    ap = float(0.0)
+    for i in range(n_users):
+        sum = float(0.0)
+        fenzi_count = int(0)
+        fenmu_count = int(0)
+        for j in range(K):
+            fenmu_count += 1
+            topk_intest_index = index_predictions[i][j]
+            if test[i][topk_intest_index] != 0:
+                fenzi_count += 1
+                sum += float(fenzi_count/fenmu_count)
+        ap += float(sum/(np.count_nonzero(test[i])))
+    MAP = float(ap/n_users)
+    return MAP
+
+def pre_rec_f1(predictions,test,K):
+    n_users,n_items = predictions.shape
+    sum = 0.0
+    rec = 0.0
+    pre = 0.0
+    index_predictions = np.argsort(-predictions)
+    for i in range(n_users):
+        for j in range(K):
+            topk_intest_index = index_predictions[i][j]
+            if test[i][topk_intest_index] != 0:
+                sum += 1.0
+        rec += sum/(np.count_nonzero(test[i]))
+        pre += float(sum/K)
+        sum = 0.0
+    precision = pre / n_users
+    recall = rec / n_users
+    f_score = (2.0*precision*recall) / (precision+recall)
+    return precision, recall, f_score
+
+def getDCG(rels):
+    dcg = rels[0]
+    i = 2
+    for rel in rels[1:]:
+        dcg = dcg + pow(2,rel) / math.log(i,2)
+        i += 1
+    return dcg
+
+def getIDCG(rels):
+    rels.sort()
+    rels.reverse()
+    return getDCG(rels)
+
+def getNDCG(predictions,test,K):
+    # followed the loop, len(topdata[i]) is [1,5,10,15,20]
+    # objective: to mark each pid of topData[i](compared with corresponding testData) in three levels
+    # to perform the ranking criteria better
+    n_users,n_items = predictions.shape
+    index_predictions = np.argsort(-predictions)
+    scores = []
+    ndcg = 0.0
+    dcg = 0.0
+    idcg = 0.0
+    for i in range(n_users):
+        for j in range(K):
+            topk_intest_index = index_predictions[i][j]
+            if test[i][topk_intest_index] != 0:
+                scores.append(1)
+            else:
+                scores.append(0)
+        # print scores
+        dcg += getDCG(scores)
+        idcg += getIDCG(scores)
+        scores = []
+    ndcg = dcg/idcg
+    return ndcg
+
+
 # sgd predict
 def train_predict(user_vecs, item_vecs):
     predictions = np.zeros((user_vecs.shape[1], item_vecs.shape[1]))
     for u in range(user_vecs.shape[1]):
-        print u
+        # print u
         for i in range(item_vecs.shape[1]):
             predictions[u, i] = predict(user_vecs, item_vecs, u, i)
     return predictions
@@ -705,8 +801,10 @@ if __name__ == "__main__":
     # step7----------dnn_pmf
     DNNPMF(train_data_matrix, test_data_matrix, iindex_2_iid, valid_movieid)  
 
+    # step8----------criteria
+    get_criteria(test_data_matrix)
     # step8----------predict
-    predictions = predict_all()
+    # predictions = predict_all()
 
     # step9----------calc RMSE
     # predictions = np.load('./predictions.npy')
